@@ -27,13 +27,15 @@
 
 #include <vector>
 
+#include "LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h"
+
 namespace aidl {
 namespace android {
 namespace hardware {
 namespace bluetooth {
 namespace audio {
 
-class BluetoothAudioCodecs {
+class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS BluetoothAudioCodecs {
  public:
   static std::vector<PcmCapabilities> GetSoftwarePcmCapabilities();
   static std::vector<CodecCapabilities> GetA2dpOffloadCodecCapabilities(

@@ -18,6 +18,7 @@
 
 #include <android/hardware/bluetooth/audio/2.0/types.h>
 
+#include "LIBBLUETOOTHAUDIOSESSION_EXPORTS_.h"
 namespace android {
 namespace bluetooth {
 namespace audio {
@@ -27,12 +28,12 @@ using ::android::hardware::bluetooth::audio::V2_0::CodecConfiguration;
 using ::android::hardware::bluetooth::audio::V2_0::PcmParameters;
 using ::android::hardware::bluetooth::audio::V2_0::SessionType;
 
-std::vector<PcmParameters> GetSoftwarePcmCapabilities();
-std::vector<CodecCapabilities> GetOffloadCodecCapabilities(
+std::vector<PcmParameters> LIBBLUETOOTHAUDIOSESSION_EXPORTS GetSoftwarePcmCapabilities();
+std::vector<CodecCapabilities> LIBBLUETOOTHAUDIOSESSION_EXPORTS GetOffloadCodecCapabilities(
     const SessionType& session_type);
 
-bool IsSoftwarePcmConfigurationValid(const PcmParameters& pcm_config);
-bool IsOffloadCodecConfigurationValid(const SessionType& session_type,
+bool LIBBLUETOOTHAUDIOSESSION_EXPORTS IsSoftwarePcmConfigurationValid(const PcmParameters& pcm_config);
+bool LIBBLUETOOTHAUDIOSESSION_EXPORTS IsOffloadCodecConfigurationValid(const SessionType& session_type,
                                       const CodecConfiguration& codec_config);
 
 }  // namespace audio

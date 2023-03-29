@@ -18,6 +18,7 @@
 
 #include "BluetoothAudioSession.h"
 
+#include "LIBBLUETOOTHAUDIOSESSION_EXPORTS_.h"
 namespace android {
 namespace bluetooth {
 namespace audio {

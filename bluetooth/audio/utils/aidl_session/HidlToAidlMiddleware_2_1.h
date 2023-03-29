@@ -18,6 +18,7 @@
 
 #include "../session/BluetoothAudioSession.h"
 
+#include "LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h"
 namespace aidl {
 namespace android {
 namespace hardware {
@@ -29,7 +30,7 @@ using SessionType_2_1 =
 using AudioConfig_2_1 =
     ::android::hardware::bluetooth::audio::V2_1::AudioConfiguration;
 
-class HidlToAidlMiddleware_2_1 {
+class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS HidlToAidlMiddleware_2_1 {
  public:
   static const AudioConfig_2_1 GetAudioConfig(
       const SessionType_2_1& session_type);

@@ -23,6 +23,8 @@
 
 #include "BluetoothAudioSession.h"
 
+#include <thread>
+
 namespace aidl {
 namespace android {
 namespace hardware {
@@ -198,7 +200,7 @@ void BluetoothAudioSession::UnregisterStatusCback(uint16_t cookie) {
 bool BluetoothAudioSession::StartStream(bool is_low_latency) {
   std::lock_guard<std::recursive_mutex> guard(mutex_);
   if (!IsSessionReady()) {
-    LOG(DEBUG) << __func__ << " - SessionType=" << toString(session_type_)
+    LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
                << " has NO session";
     return false;
   }
@@ -214,7 +216,7 @@ bool BluetoothAudioSession::StartStream(bool is_low_latency) {
 bool BluetoothAudioSession::SuspendStream() {
   std::lock_guard<std::recursive_mutex> guard(mutex_);
   if (!IsSessionReady()) {
-    LOG(DEBUG) << __func__ << " - SessionType=" << toString(session_type_)
+    LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
                << " has NO session";
     return false;
   }
@@ -348,10 +350,10 @@ size_t BluetoothAudioSession::OutWritePcmData(const void* buffer,
       total_written += num_bytes_to_write;
     } else if (timeout_ms >= kWritePollMs) {
       lock.unlock();
-      usleep(kWritePollMs * 1000);
+      std::this_thread::sleep_for(std::chrono::milliseconds(kWritePollMs));
       timeout_ms -= kWritePollMs;
     } else {
-      LOG(DEBUG) << "Data " << total_written << "/" << bytes << " overflow "
+      LOG(INFO) << "Data " << total_written << "/" << bytes << " overflow "
                  << (kFmqSendTimeoutMs - timeout_ms) << " ms";
       return total_written;
     }
@@ -384,11 +386,11 @@ size_t BluetoothAudioSession::InReadPcmData(void* buffer, size_t bytes) {
       total_read += num_bytes_to_read;
     } else if (timeout_ms >= kReadPollMs) {
       lock.unlock();
-      usleep(kReadPollMs * 1000);
+      std::this_thread::sleep_for(std::chrono::milliseconds(kWritePollMs));
       timeout_ms -= kReadPollMs;
       continue;
     } else {
-      LOG(DEBUG) << "Data " << total_read << "/" << bytes << " overflow "
+      LOG(INFO) << "Data " << total_read << "/" << bytes << " overflow "
                  << (kFmqReceiveTimeoutMs - timeout_ms) << " ms";
       return total_read;
     }
@@ -445,7 +447,7 @@ bool BluetoothAudioSession::GetPresentationPosition(
     PresentationPosition& presentation_position) {
   std::lock_guard<std::recursive_mutex> guard(mutex_);
   if (!IsSessionReady()) {
-    LOG(DEBUG) << __func__ << " - SessionType=" << toString(session_type_)
+    LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
                << " has NO session";
     return false;
   }
@@ -463,7 +465,7 @@ void BluetoothAudioSession::UpdateSourceMetadata(
     const struct source_metadata& source_metadata) {
   std::lock_guard<std::recursive_mutex> guard(mutex_);
   if (!IsSessionReady()) {
-    LOG(DEBUG) << __func__ << " - SessionType=" << toString(session_type_)
+    LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
                << " has NO session";
     return;
   }
@@ -488,7 +490,7 @@ void BluetoothAudioSession::UpdateSourceMetadata(
         static_cast<media::audio::common::AudioContentType>(
             source_metadata.tracks[i].content_type);
     hal_source_metadata.tracks[i].gain = source_metadata.tracks[i].gain;
-    LOG(VERBOSE) << __func__ << " - SessionType=" << toString(session_type_)
+    LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
                  << ", usage=" << toString(hal_source_metadata.tracks[i].usage)
                  << ", content="
                  << toString(hal_source_metadata.tracks[i].contentType)
@@ -506,7 +508,7 @@ void BluetoothAudioSession::UpdateSinkMetadata(
     const struct sink_metadata& sink_metadata) {
   std::lock_guard<std::recursive_mutex> guard(mutex_);
   if (!IsSessionReady()) {
-    LOG(DEBUG) << __func__ << " - SessionType=" << toString(session_type_)
+    LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
                << " has NO session";
     return;
   }
@@ -546,7 +548,7 @@ void BluetoothAudioSession::UpdateSinkMetadata(
 std::vector<LatencyMode> BluetoothAudioSession::GetSupportedLatencyModes() {
   std::lock_guard<std::recursive_mutex> guard(mutex_);
   if (!IsSessionReady()) {
-    LOG(DEBUG) << __func__ << " - SessionType=" << toString(session_type_)
+    LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
                << " has NO session";
     return std::vector<LatencyMode>();
   }
@@ -564,7 +566,7 @@ std::vector<LatencyMode> BluetoothAudioSession::GetSupportedLatencyModes() {
 void BluetoothAudioSession::SetLatencyMode(const LatencyMode& latency_mode) {
   std::lock_guard<std::recursive_mutex> guard(mutex_);
   if (!IsSessionReady()) {
-    LOG(DEBUG) << __func__ << " - SessionType=" << toString(session_type_)
+    LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
                << " has NO session";
     return;
   }

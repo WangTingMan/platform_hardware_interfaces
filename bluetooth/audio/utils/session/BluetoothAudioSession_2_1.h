@@ -22,11 +22,12 @@
 #include <mutex>
 #include <unordered_map>
 
+#include "LIBBLUETOOTHAUDIOSESSION_EXPORTS_.h"
 namespace android {
 namespace bluetooth {
 namespace audio {
 
-class BluetoothAudioSession_2_1 {
+class LIBBLUETOOTHAUDIOSESSION_EXPORTS BluetoothAudioSession_2_1 {
  private:
   std::shared_ptr<BluetoothAudioSession> audio_session;
 
@@ -75,7 +76,7 @@ class BluetoothAudioSession_2_1 {
           invalidOffloadAudioConfiguration;
 };
 
-class BluetoothAudioSessionInstance_2_1 {
+class LIBBLUETOOTHAUDIOSESSION_EXPORTS BluetoothAudioSessionInstance_2_1 {
  public:
   // The API is to fetch the specified session of A2DP / Hearing Aid
   static std::shared_ptr<BluetoothAudioSession_2_1> GetSessionInstance(

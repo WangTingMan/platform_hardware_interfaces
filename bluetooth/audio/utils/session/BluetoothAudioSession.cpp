@@ -23,6 +23,8 @@
 
 #include "../aidl_session/HidlToAidlMiddleware_2_0.h"
 
+#include <thread>
+
 namespace android {
 namespace bluetooth {
 namespace audio {
@@ -424,7 +426,7 @@ size_t BluetoothAudioSession::OutWritePcmData(const void* buffer,
       totalWritten += availableToWrite;
     } else if (ms_timeout >= kWritePollMs) {
       lock.unlock();
-      usleep(kWritePollMs * 1000);
+      std::this_thread::sleep_for(std::chrono::milliseconds(kWritePollMs));
       ms_timeout -= kWritePollMs;
     } else {
       ALOGD("data %zu/%zu overflow %d ms", totalWritten, bytes,
@@ -459,7 +461,7 @@ size_t BluetoothAudioSession::InReadPcmData(void* buffer, size_t bytes) {
       totalRead += availableToRead;
     } else if (ms_timeout >= kReadPollMs) {
       lock.unlock();
-      usleep(kReadPollMs * 1000);
+      std::this_thread::sleep_for(std::chrono::milliseconds(kReadPollMs));
       ms_timeout -= kReadPollMs;
       continue;
     } else {

@@ -22,6 +22,10 @@
 #include "BluetoothAudioSessionReport.h"
 #include "BluetoothAudioSupportedCodecsDB.h"
 
+#ifndef __unused
+#define __unused
+#endif
+
 namespace android {
 namespace hardware {
 namespace bluetooth {

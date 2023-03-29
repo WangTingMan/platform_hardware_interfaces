@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h"
 namespace aidl {
 namespace android {
 namespace hardware {
@@ -67,7 +68,7 @@ inline uint16_t ObserversCookieGetUpperBound(SessionType session_type) {
  * This presents the callbacks of started / suspended and session changed,
  * and the bluetooth_audio module uses to receive the status notification
  ***/
-struct PortStatusCallbacks {
+struct LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS PortStatusCallbacks {
   /***
    * control_result_cb_ - when the Bluetooth stack reports results of
    * streamStarted or streamSuspended, the BluetoothAudioProvider will invoke
@@ -104,7 +105,7 @@ struct PortStatusCallbacks {
       low_latency_mode_allowed_cb_;
 };
 
-class BluetoothAudioSession {
+class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS BluetoothAudioSession {
  public:
   BluetoothAudioSession(const SessionType& session_type);
 
@@ -224,7 +225,7 @@ class BluetoothAudioSession {
       std::string() + IBluetoothAudioProviderFactory::descriptor + "/default";
 };
 
-class BluetoothAudioSessionInstance {
+class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS BluetoothAudioSessionInstance {
  public:
   // The API is to fetch the specified session of A2DP / Hearing Aid
   static std::shared_ptr<BluetoothAudioSession> GetSessionInstance(

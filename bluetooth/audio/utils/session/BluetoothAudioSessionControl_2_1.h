@@ -18,11 +18,12 @@
 
 #include "BluetoothAudioSession_2_1.h"
 
+#include "LIBBLUETOOTHAUDIOSESSION_EXPORTS_.h"
 namespace android {
 namespace bluetooth {
 namespace audio {
 
-class BluetoothAudioSessionControl_2_1 {
+class LIBBLUETOOTHAUDIOSESSION_EXPORTS BluetoothAudioSessionControl_2_1 {
   using SessionType_2_1 =
       ::android::hardware::bluetooth::audio::V2_1::SessionType;
   using AudioConfiguration_2_1 =

@@ -18,6 +18,7 @@
 
 #include "../session/BluetoothAudioSession.h"
 
+#include "LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h"
 namespace aidl {
 namespace android {
 namespace hardware {
@@ -31,7 +32,7 @@ using PortStatusCallbacks_2_0 =
 using AudioConfig_2_0 =
     ::android::hardware::bluetooth::audio::V2_0::AudioConfiguration;
 
-class HidlToAidlMiddleware_2_0 {
+class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS HidlToAidlMiddleware_2_0 {
  public:
   static bool IsAidlAvailable();
 

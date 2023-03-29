@@ -24,6 +24,8 @@
 #include <hardware/audio.h>
 #include <hidl/MQDescriptor.h>
 
+#include "LIBBLUETOOTHAUDIOSESSION_EXPORTS_.h"
+
 namespace android {
 namespace bluetooth {
 namespace audio {
@@ -78,7 +80,7 @@ struct PortStatusCallbacks {
   std::function<void(uint16_t cookie)> session_changed_cb_;
 };
 
-class BluetoothAudioSession {
+class LIBBLUETOOTHAUDIOSESSION_EXPORTS BluetoothAudioSession {
   friend class BluetoothAudioSession_2_1;
   friend class BluetoothAudioSession_2_2;
 
@@ -173,7 +175,7 @@ class BluetoothAudioSession {
       invalidOffloadAudioConfiguration;
 };
 
-class BluetoothAudioSessionInstance {
+class LIBBLUETOOTHAUDIOSESSION_EXPORTS BluetoothAudioSessionInstance {
  public:
   // The API is to fetch the specified session of A2DP / Hearing Aid
   static std::shared_ptr<BluetoothAudioSession> GetSessionInstance(

@@ -18,13 +18,14 @@
 
 #include "BluetoothAudioSession.h"
 
+#include "LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h"
 namespace aidl {
 namespace android {
 namespace hardware {
 namespace bluetooth {
 namespace audio {
 
-class BluetoothAudioSessionControl {
+class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS BluetoothAudioSessionControl {
  public:
   /***
    * The control API helps to check if session is ready or not

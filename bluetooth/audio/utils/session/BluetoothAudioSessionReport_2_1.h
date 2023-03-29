@@ -18,11 +18,12 @@
 
 #include "BluetoothAudioSession_2_1.h"
 
+#include "LIBBLUETOOTHAUDIOSESSION_EXPORTS_.h"
 namespace android {
 namespace bluetooth {
 namespace audio {
 
-class BluetoothAudioSessionReport_2_1 {
+class LIBBLUETOOTHAUDIOSESSION_EXPORTS BluetoothAudioSessionReport_2_1 {
  public:
   // The API reports the Bluetooth stack has started the session, and will
   // inform registered bluetooth_audio outputs

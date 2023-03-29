@@ -18,11 +18,12 @@
 
 #include "BluetoothAudioSession.h"
 
+#include "LIBBLUETOOTHAUDIOSESSION_EXPORTS_.h"
 namespace android {
 namespace bluetooth {
 namespace audio {
 
-class BluetoothAudioSessionControl {
+class LIBBLUETOOTHAUDIOSESSION_EXPORTS BluetoothAudioSessionControl {
  public:
   // The control API helps to check if session is ready or not
   // @return: true if the Bluetooth stack has started th specified session
