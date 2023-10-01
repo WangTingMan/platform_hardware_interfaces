@@ -17,6 +17,7 @@
 #pragma once
 
 #include "BluetoothAudioProvider.h"
+#include "ANDROIDHARDWAREBLUETOOTHAUDIO20IMPL_EXPORTS.h"
 
 namespace android {
 namespace hardware {
@@ -25,7 +26,7 @@ namespace audio {
 namespace V2_0 {
 namespace implementation {
 
-class A2dpOffloadAudioProvider : public BluetoothAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIO20IMPL_API A2dpOffloadAudioProvider : public BluetoothAudioProvider {
  public:
   A2dpOffloadAudioProvider();
 

@@ -17,6 +17,8 @@
 #pragma once
 
 #include <android/hardware/bluetooth/audio/2.0/IBluetoothAudioProvider.h>
+#include "ANDROIDHARDWAREBLUETOOTHAUDIO20IMPL_EXPORTS.h"
+
 
 namespace android {
 namespace hardware {
@@ -34,7 +36,7 @@ using BluetoothAudioStatus =
 
 class BluetoothAudioDeathRecipient;
 
-class BluetoothAudioProvider : public IBluetoothAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIO20IMPL_API BluetoothAudioProvider : public IBluetoothAudioProvider {
  public:
   BluetoothAudioProvider();
   ~BluetoothAudioProvider() = default;
@@ -58,7 +60,7 @@ class BluetoothAudioProvider : public IBluetoothAudioProvider {
   virtual Return<void> onSessionReady(startSession_cb _hidl_cb) = 0;
 };
 
-class BluetoothAudioDeathRecipient : public hidl_death_recipient {
+class ANDROIDHARDWAREBLUETOOTHAUDIO20IMPL_API BluetoothAudioDeathRecipient : public hidl_death_recipient {
  public:
   BluetoothAudioDeathRecipient(const sp<BluetoothAudioProvider> provider)
       : provider_(provider) {}

@@ -20,6 +20,8 @@
 #include <hidl/MQDescriptor.h>
 
 #include "BluetoothAudioProvider.h"
+#include "ANDROIDHARDWAREBLUETOOTHAUDIO20IMPL_EXPORTS.h"
+
 
 namespace android {
 namespace hardware {
@@ -33,7 +35,7 @@ using ::android::hardware::MessageQueue;
 
 using DataMQ = MessageQueue<uint8_t, kSynchronizedReadWrite>;
 
-class A2dpSoftwareAudioProvider : public BluetoothAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIO20IMPL_API A2dpSoftwareAudioProvider : public BluetoothAudioProvider {
  public:
   A2dpSoftwareAudioProvider();
 

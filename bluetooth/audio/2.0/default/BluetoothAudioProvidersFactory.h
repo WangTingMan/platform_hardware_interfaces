@@ -22,6 +22,8 @@
 #include "A2dpSoftwareAudioProvider.h"
 #include "BluetoothAudioProvider.h"
 #include "HearingAidAudioProvider.h"
+#include "ANDROIDHARDWAREBLUETOOTHAUDIO20IMPL_EXPORTS.h"
+
 
 namespace android {
 namespace hardware {
@@ -30,7 +32,7 @@ namespace audio {
 namespace V2_0 {
 namespace implementation {
 
-class BluetoothAudioProvidersFactory : public IBluetoothAudioProvidersFactory {
+class ANDROIDHARDWAREBLUETOOTHAUDIO20IMPL_API BluetoothAudioProvidersFactory : public IBluetoothAudioProvidersFactory {
  public:
   BluetoothAudioProvidersFactory() {}
 
@@ -47,7 +49,7 @@ class BluetoothAudioProvidersFactory : public IBluetoothAudioProvidersFactory {
   static HearingAidAudioProvider hearing_aid_provider_instance_;
 };
 
-extern "C" IBluetoothAudioProvidersFactory*
+extern "C" ANDROIDHARDWAREBLUETOOTHAUDIO20IMPL_API IBluetoothAudioProvidersFactory*
 HIDL_FETCH_IBluetoothAudioProvidersFactory(const char* name);
 
 }  // namespace implementation
