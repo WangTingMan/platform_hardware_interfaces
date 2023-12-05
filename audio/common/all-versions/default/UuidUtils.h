@@ -20,8 +20,19 @@
 #include <string>
 
 // clang-format off
-#include PATH(android/hardware/audio/common/COMMON_TYPES_FILE_VERSION/types.h)
+//#include PATH(android/hardware/audio/common/COMMON_TYPES_FILE_VERSION/types.h)
 // clang-format on
+
+#ifndef COMMON_TYPES_FILE_VERSION
+#define COMMON_TYPES_FILE_VERSION 5
+#endif
+
+#if COMMON_TYPES_FILE_VERSION == 5
+#include <android\hardware\audio\common\5.0\types.h>
+#define COMMON_TYPES_CPP_VERSION V5_0
+#elif COMMON_TYPES_FILE_VERSION == 6
+#else
+#endif
 
 #include <system/audio.h>
 
@@ -29,7 +40,7 @@ namespace android {
 namespace hardware {
 namespace audio {
 namespace common {
-namespace CPP_VERSION {
+namespace COMMON_TYPES_CPP_VERSION {
 namespace implementation {
 
 using namespace ::android::hardware::audio::common::COMMON_TYPES_CPP_VERSION;

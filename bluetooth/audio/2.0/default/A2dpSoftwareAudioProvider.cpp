@@ -22,6 +22,10 @@
 #include "BluetoothAudioSessionReport.h"
 #include "BluetoothAudioSupportedCodecsDB.h"
 
+#ifdef _MSC_VER
+#include <base/rand_util.h>
+#endif
+
 namespace android {
 namespace hardware {
 namespace bluetooth {
@@ -48,8 +52,16 @@ A2dpSoftwareAudioProvider::A2dpSoftwareAudioProvider()
     : BluetoothAudioProvider(), mDataMQ(nullptr) {
   LOG(INFO) << __func__ << " - size of audio buffer " << kDataMqSize
             << " byte(s)";
+#ifdef _MSC_VER
+  std::string shared_memory_name{ "android::hardware::bluetooth::audio::V2_0::A2dpSoftwareAudioProvider{" };
+  shared_memory_name.append( std::to_string( __LINE__ ) ).append( "}" );
+  shared_memory_name.append( std::to_string( ::base::RandInt( 0, 1000 ) ) );
+  std::unique_ptr<DataMQ> tempDataMQ(
+      new DataMQ( kDataMqSize, shared_memory_name,/* EventFlag */ true ) );
+#else
   std::unique_ptr<DataMQ> tempDataMQ(
       new DataMQ(kDataMqSize, /* EventFlag */ true));
+#endif
   if (tempDataMQ && tempDataMQ->isValid()) {
     mDataMQ = std::move(tempDataMQ);
     session_type_ = SessionType::A2DP_SOFTWARE_ENCODING_DATAPATH;

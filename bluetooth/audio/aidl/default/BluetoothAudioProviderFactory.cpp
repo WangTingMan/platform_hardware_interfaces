@@ -34,11 +34,30 @@ namespace hardware {
 namespace bluetooth {
 namespace audio {
 
-BluetoothAudioProviderFactory::BluetoothAudioProviderFactory() {}
+BluetoothAudioProviderFactory::BluetoothAudioProviderFactory() {
+#ifdef _MSC_VER
+    mInvokeOpenProvider = std::bind( &BluetoothAudioProviderFactory::openProvider_impl,
+                                     this, std::placeholders::_1, std::placeholders::_2 );
+    mGetProviderCapabilities = std::bind( &BluetoothAudioProviderFactory::getProviderCapabilities_impl,
+                                          this, std::placeholders::_1, std::placeholders::_2 );
+#endif
+}
 
+#ifdef _MSC_VER
 ndk::ScopedAStatus BluetoothAudioProviderFactory::openProvider(
     const SessionType session_type,
     std::shared_ptr<IBluetoothAudioProvider>* _aidl_return) {
+    return openProvider_impl( session_type, _aidl_return );
+}
+
+ndk::ScopedAStatus BluetoothAudioProviderFactory::openProvider_impl(
+    const SessionType session_type,
+    std::shared_ptr<IBluetoothAudioProvider>* _aidl_return) {
+#else
+ndk::ScopedAStatus BluetoothAudioProviderFactory::openProvider(
+    const SessionType session_type,
+    std::shared_ptr<IBluetoothAudioProvider>*_aidl_return) {
+#endif
   LOG(INFO) << __func__ << " - SessionType=" << toString(session_type);
   std::shared_ptr<BluetoothAudioProvider> provider = nullptr;
 
@@ -93,10 +112,22 @@ ndk::ScopedAStatus BluetoothAudioProviderFactory::openProvider(
   return ndk::ScopedAStatus::ok();
 }
 
+#ifdef _MSC_VER
 ndk::ScopedAStatus BluetoothAudioProviderFactory::getProviderCapabilities(
     const SessionType session_type,
     std::vector<AudioCapabilities>* _aidl_return) {
-  if (session_type == SessionType::A2DP_HARDWARE_OFFLOAD_ENCODING_DATAPATH ||
+    return getProviderCapabilities_impl( session_type, _aidl_return );
+}
+
+ndk::ScopedAStatus BluetoothAudioProviderFactory::getProviderCapabilities_impl(
+    const SessionType session_type,
+    std::vector<AudioCapabilities>* _aidl_return ) {
+#else
+ndk::ScopedAStatus BluetoothAudioProviderFactory::getProviderCapabilities(
+    const SessionType session_type,
+    std::vector<AudioCapabilities>* _aidl_return) {
+#endif
+    if (session_type == SessionType::A2DP_HARDWARE_OFFLOAD_ENCODING_DATAPATH ||
       session_type == SessionType::A2DP_HARDWARE_OFFLOAD_DECODING_DATAPATH) {
     auto codec_capabilities =
         BluetoothAudioCodecs::GetA2dpOffloadCodecCapabilities(session_type);

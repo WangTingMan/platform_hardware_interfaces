@@ -22,6 +22,10 @@
 #include <BluetoothAudioSessionReport.h>
 #include <android-base/logging.h>
 
+#ifdef _MSC_VER
+#include <base/rand_util.h>
+#endif
+
 namespace aidl {
 namespace android {
 namespace hardware {
@@ -40,8 +44,16 @@ HearingAidAudioProvider::HearingAidAudioProvider()
     : BluetoothAudioProvider(), data_mq_(nullptr) {
   LOG(INFO) << __func__ << " - size of audio buffer " << kDataMqSize
             << " byte(s)";
+#ifdef _MSC_VER
+  std::string shared_memory_name{ "aidl::android::hardware::bluetooth::audio::HearingAidAudioProvider{" };
+  shared_memory_name.append( std::to_string( __LINE__ ) ).append( "}" );
+  shared_memory_name.append( std::to_string( ::base::RandInt( 0, 1000 ) ) );
+  std::unique_ptr<DataMQ> data_mq(
+      new DataMQ( kDataMqSize, shared_memory_name,/* EventFlag */ true ) );
+#else
   std::unique_ptr<DataMQ> data_mq(
       new DataMQ(kDataMqSize, /* EventFlag */ true));
+#endif
   if (data_mq && data_mq->isValid()) {
     data_mq_ = std::move(data_mq);
     session_type_ = SessionType::HEARING_AID_SOFTWARE_ENCODING_DATAPATH;

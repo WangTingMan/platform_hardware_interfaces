@@ -30,6 +30,15 @@ class A2dpSoftwareAudioProvider : public BluetoothAudioProvider {
 
   bool isValid(const SessionType& sessionType) override;
 
+#ifdef _MSC_VER
+  ndk::ScopedAStatus startSession_impl(
+      const std::shared_ptr<IBluetoothAudioPort>& host_if,
+      const AudioConfiguration& audio_config,
+      const std::vector<LatencyMode>& latency_modes,
+      DataMQDesc* _aidl_return );
+  static ndk::ScopedAStatus onSessionReadyDebug();
+#endif
+
   ndk::ScopedAStatus startSession(
       const std::shared_ptr<IBluetoothAudioPort>& host_if,
       const AudioConfiguration& audio_config,

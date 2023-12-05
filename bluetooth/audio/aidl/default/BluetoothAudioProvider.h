@@ -50,6 +50,20 @@ class BluetoothAudioProvider : public BnBluetoothAudioProvider {
       const AudioConfiguration& audio_config);
   ndk::ScopedAStatus setLowLatencyModeAllowed(bool allowed);
 
+#ifdef _MSC_VER
+  ndk::ScopedAStatus impl__startSession(
+      const std::shared_ptr<IBluetoothAudioPort>& host_if,
+      const AudioConfiguration& audio_config,
+      const std::vector<LatencyMode>& latency_modes,
+      DataMQDesc* _aidl_return );
+  ndk::ScopedAStatus impl__endSession();
+  ndk::ScopedAStatus impl__streamStarted( BluetoothAudioStatus status );
+  ndk::ScopedAStatus impl__streamSuspended( BluetoothAudioStatus status );
+  ndk::ScopedAStatus impl__updateAudioConfiguration(
+      const AudioConfiguration& audio_config );
+  ndk::ScopedAStatus impl__setLowLatencyModeAllowed( bool allowed );
+#endif
+
   virtual bool isValid(const SessionType& sessionType) = 0;
 
  protected:

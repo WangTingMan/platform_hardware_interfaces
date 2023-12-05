@@ -25,7 +25,7 @@ namespace android {
 namespace hardware {
 namespace audio {
 namespace common {
-namespace CPP_VERSION {
+namespace COMMON_TYPES_CPP_VERSION {
 namespace implementation {
 
 status_t HidlUtils::audioConfigFromHal(const audio_config_t& halConfig, bool, AudioConfig* config) {

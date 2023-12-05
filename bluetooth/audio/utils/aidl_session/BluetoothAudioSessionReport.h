@@ -25,7 +25,7 @@ namespace hardware {
 namespace bluetooth {
 namespace audio {
 
-class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS BluetoothAudioSessionReport {
+class BluetoothAudioSessionReport {
  public:
   /***
    * The API reports the Bluetooth stack has started the session, and will

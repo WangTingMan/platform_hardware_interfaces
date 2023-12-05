@@ -18,14 +18,26 @@
 #define android_hardware_audio_Hidl_Utils_H_
 
 // clang-format off
-#include PATH(android/hardware/audio/common/COMMON_TYPES_FILE_VERSION/types.h)
+//#include PATH(android/hardware/audio/common/COMMON_TYPES_FILE_VERSION/types.h)
 // clang-format on
+
+#define COMMON_TYPES_FILE_VERSION 5
+
+#if COMMON_TYPES_FILE_VERSION == 5
+#include <android\hardware\audio\common\5.0\types.h>
+#define COMMON_TYPES_CPP_VERSION V5_0
+#elif COMMON_TYPES_FILE_VERSION == 6
+#else
+#endif
 
 #include <memory>
 #include <string>
 #include <vector>
 
 #include <system/audio.h>
+
+#include <utils/Errors.h>
+#include <hidl/HidlSupport.h>
 
 namespace android {
 namespace hardware {

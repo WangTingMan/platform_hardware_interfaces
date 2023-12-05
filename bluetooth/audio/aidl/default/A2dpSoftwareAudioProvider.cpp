@@ -22,6 +22,15 @@
 #include <BluetoothAudioSessionReport.h>
 #include <android-base/logging.h>
 
+#ifdef _MSC_VER
+#include <base/rand_util.h>
+#include <aidl\android\hardware\common\fmq\MQDescriptor.h>
+#include <binder\Parcel.h>
+#include <android\binder_auto_utils.h>
+#include <ndk\parcel_internal.h>
+#include "ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS.h"
+#endif
+
 namespace aidl {
 namespace android {
 namespace hardware {
@@ -54,24 +63,55 @@ A2dpSoftwareAudioProvider::A2dpSoftwareAudioProvider()
     : BluetoothAudioProvider(), data_mq_(nullptr) {
   LOG(INFO) << __func__ << " - size of audio buffer " << kDataMqSize
             << " byte(s)";
+#ifdef _MSC_VER
+  std::string shared_memory_name{ "aidl::android::hardware::bluetooth::audio::A2dpSoftwareAudioProvider{" };
+  shared_memory_name.append( std::to_string( __LINE__ ) ).append( "}" );
+  shared_memory_name.append( std::to_string( ::base::RandInt( 0, 1000 ) ) );
   std::unique_ptr<DataMQ> data_mq(
-      new DataMQ(kDataMqSize, /* EventFlag */ true));
+      new DataMQ(kDataMqSize, shared_memory_name,/* EventFlag */ true));
+#else
+  std::unique_ptr<DataMQ> data_mq(
+      new DataMQ( kDataMqSize, /* EventFlag */ true ) );
+#endif
   if (data_mq && data_mq->isValid()) {
     data_mq_ = std::move(data_mq);
   } else {
     ALOGE_IF(!data_mq, "failed to allocate data MQ");
     ALOGE_IF(data_mq && !data_mq->isValid(), "data MQ is invalid");
   }
+
+#ifdef _MSC_VER
+  m_startSession = std::bind( &A2dpSoftwareAudioProvider::startSession_impl,
+                              this, std::placeholders::_1, std::placeholders::_2,
+                              std::placeholders::_3, std::placeholders::_4 
+                            );
+#endif
+
 }
 
 bool A2dpSoftwareAudioProvider::isValid(const SessionType& sessionType) {
   return (sessionType == session_type_ && data_mq_ && data_mq_->isValid());
 }
 
+#ifdef _MSC_VER
 ndk::ScopedAStatus A2dpSoftwareAudioProvider::startSession(
     const std::shared_ptr<IBluetoothAudioPort>& host_if,
     const AudioConfiguration& audio_config,
     const std::vector<LatencyMode>& latency_modes, DataMQDesc* _aidl_return) {
+    return startSession_impl( host_if, audio_config, latency_modes, _aidl_return );
+}
+
+    ndk::ScopedAStatus A2dpSoftwareAudioProvider::startSession_impl(
+        const std::shared_ptr<IBluetoothAudioPort>&host_if,
+        const AudioConfiguration & audio_config,
+        const std::vector<LatencyMode>&latency_modes, DataMQDesc * _aidl_return )
+{
+#else
+ndk::ScopedAStatus A2dpSoftwareAudioProvider::startSession(
+    const std::shared_ptr<IBluetoothAudioPort>& host_if,
+    const AudioConfiguration& audio_config,
+    const std::vector<LatencyMode>& latency_modes, DataMQDesc* _aidl_return) {
+#endif
   if (audio_config.getTag() != AudioConfiguration::pcmConfig) {
     LOG(WARNING) << __func__ << " - Invalid Audio Configuration="
                  << audio_config.toString();
@@ -91,6 +131,16 @@ ndk::ScopedAStatus A2dpSoftwareAudioProvider::startSession(
       host_if, audio_config, latency_modes, _aidl_return);
 }
 
+#ifdef _MSC_VER
+ndk::ScopedAStatus A2dpSoftwareAudioProvider::onSessionReadyDebug()
+{
+    auto provider = ::ndk::SharedRefBase::make<A2dpSoftwareEncodingAudioProvider>();
+    DataMQDesc decs;
+    auto ret = provider->onSessionReady( &decs );
+    return ret;
+}
+#endif
+
 ndk::ScopedAStatus A2dpSoftwareAudioProvider::onSessionReady(
     DataMQDesc* _aidl_return) {
   if (data_mq_ == nullptr || !data_mq_->isValid()) {
@@ -109,3 +159,30 @@ ndk::ScopedAStatus A2dpSoftwareAudioProvider::onSessionReady(
 }  // namespace hardware
 }  // namespace android
 }  // namespace aidl
+
+#ifdef _MSC_VER
+
+void test()
+{
+    std::string shared_memory_name{ "A2dpSoftwareAudioProvider{" };
+    shared_memory_name.append( std::to_string( __LINE__ ) ).append( "}" );
+    shared_memory_name.append( std::to_string( ::base::RandInt( 0, 1000 ) ) );
+    std::unique_ptr<DataMQ> data_mq(
+        new DataMQ( 7680, shared_memory_name,/* EventFlag */ true ) );
+
+    auto desc = data_mq->dupeDesc();
+
+    std::unique_ptr<DataMQ> data_mq2;
+    data_mq2.reset( new DataMQ( desc ) );
+
+    int x = 90;
+    x++;
+}
+
+ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API void ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_TEST_NOT_USE_DIRECTLY()
+{
+    test();
+    LOG( ERROR ) << "Should not use this.";
+    aidl::android::hardware::bluetooth::audio::A2dpSoftwareAudioProvider::onSessionReadyDebug();
+}
+#endif

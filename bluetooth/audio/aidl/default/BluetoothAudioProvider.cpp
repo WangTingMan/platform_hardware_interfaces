@@ -30,13 +30,41 @@ namespace audio {
 BluetoothAudioProvider::BluetoothAudioProvider() {
   death_recipient_ = ::ndk::ScopedAIBinder_DeathRecipient(
       AIBinder_DeathRecipient_new(binderDiedCallbackAidl));
+
+#ifdef _MSC_VER
+  using namespace std::placeholders;
+  m_startSession = std::bind( &BluetoothAudioProvider::impl__startSession, this, _1, _2, _3, _4 );
+  m_endSession = std::bind( &BluetoothAudioProvider::impl__endSession, this );
+  m_streamStarted = std::bind( &BluetoothAudioProvider::impl__streamStarted, this, _1 );
+  m_streamSuspended = std::bind( &BluetoothAudioProvider::impl__streamSuspended, this, _1 );
+  m_updateAudioConfiguration = std::bind( &BluetoothAudioProvider::impl__updateAudioConfiguration, this, _1 );
+  m_setLowLatencyModeAllowed = std::bind( &BluetoothAudioProvider::impl__setLowLatencyModeAllowed, this, _1 ); 
+#endif
+
 }
 
+#ifdef _MSC_VER
+ndk::ScopedAStatus BluetoothAudioProvider::startSession(
+    const std::shared_ptr<IBluetoothAudioPort>& host_if,
+    const AudioConfiguration& audio_config,
+    const std::vector<LatencyMode>& latencyModes,
+    DataMQDesc* _aidl_return )
+{
+    return impl__startSession( host_if, audio_config, latencyModes, _aidl_return );
+}
+
+ndk::ScopedAStatus BluetoothAudioProvider::impl__startSession(
+    const std::shared_ptr<IBluetoothAudioPort>& host_if,
+    const AudioConfiguration& audio_config,
+    const std::vector<LatencyMode>& latencyModes,
+    DataMQDesc* _aidl_return ) {
+#else
 ndk::ScopedAStatus BluetoothAudioProvider::startSession(
     const std::shared_ptr<IBluetoothAudioPort>& host_if,
     const AudioConfiguration& audio_config,
     const std::vector<LatencyMode>& latencyModes,
     DataMQDesc* _aidl_return) {
+#endif
   if (host_if == nullptr) {
     *_aidl_return = DataMQDesc();
     return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
@@ -54,7 +82,17 @@ ndk::ScopedAStatus BluetoothAudioProvider::startSession(
   return ndk::ScopedAStatus::ok();
 }
 
+#ifdef _MSC_VER
+ndk::ScopedAStatus BluetoothAudioProvider::endSession()
+{
+    return impl__endSession();
+}
+
+ndk::ScopedAStatus BluetoothAudioProvider::impl__endSession()
+{
+#else
 ndk::ScopedAStatus BluetoothAudioProvider::endSession() {
+#endif
   LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_);
 
   if (stack_iface_ != nullptr) {
@@ -75,8 +113,19 @@ ndk::ScopedAStatus BluetoothAudioProvider::endSession() {
   return ndk::ScopedAStatus::ok();
 }
 
+#ifdef _MSC_VER
+ndk::ScopedAStatus BluetoothAudioProvider::streamStarted(
+    BluetoothAudioStatus status )
+{
+    return impl__streamStarted( status );
+}
+
+ndk::ScopedAStatus BluetoothAudioProvider::impl__streamStarted(
+    BluetoothAudioStatus status) {
+#else
 ndk::ScopedAStatus BluetoothAudioProvider::streamStarted(
     BluetoothAudioStatus status) {
+#endif
   LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
             << ", status=" << toString(status);
 
@@ -91,8 +140,20 @@ ndk::ScopedAStatus BluetoothAudioProvider::streamStarted(
   return ndk::ScopedAStatus::ok();
 }
 
+#ifdef _MSC_VER
+ndk::ScopedAStatus BluetoothAudioProvider::streamSuspended(
+    BluetoothAudioStatus status )
+{
+    return impl__streamSuspended( status );
+}
+
+ndk::ScopedAStatus BluetoothAudioProvider::impl__streamSuspended(
+    BluetoothAudioStatus status )
+{
+#else
 ndk::ScopedAStatus BluetoothAudioProvider::streamSuspended(
     BluetoothAudioStatus status) {
+#endif
   LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
             << ", status=" << toString(status);
 
@@ -106,8 +167,19 @@ ndk::ScopedAStatus BluetoothAudioProvider::streamSuspended(
   return ndk::ScopedAStatus::ok();
 }
 
+#ifdef _MSC_VER
+ndk::ScopedAStatus BluetoothAudioProvider::updateAudioConfiguration(
+    const AudioConfiguration& audio_config )
+{
+    return impl__updateAudioConfiguration( audio_config );
+}
+
+ndk::ScopedAStatus BluetoothAudioProvider::impl__updateAudioConfiguration(
+    const AudioConfiguration& audio_config) {
+#else
 ndk::ScopedAStatus BluetoothAudioProvider::updateAudioConfiguration(
     const AudioConfiguration& audio_config) {
+#endif
   LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_);
 
   if (stack_iface_ == nullptr || audio_config_ == nullptr) {
@@ -128,8 +200,20 @@ ndk::ScopedAStatus BluetoothAudioProvider::updateAudioConfiguration(
   return ndk::ScopedAStatus::ok();
 }
 
+#ifdef _MSC_VER
+ndk::ScopedAStatus BluetoothAudioProvider::setLowLatencyModeAllowed(
+    bool allowed )
+{
+    return impl__setLowLatencyModeAllowed( allowed );
+}
+
+ndk::ScopedAStatus BluetoothAudioProvider::impl__setLowLatencyModeAllowed(
+    bool allowed )
+{
+#else
 ndk::ScopedAStatus BluetoothAudioProvider::setLowLatencyModeAllowed(
     bool allowed) {
+#endif
   LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_);
 
   if (stack_iface_ == nullptr) {

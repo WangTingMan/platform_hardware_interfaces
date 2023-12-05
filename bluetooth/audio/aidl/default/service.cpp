@@ -22,10 +22,15 @@
 
 #include "BluetoothAudioProviderFactory.h"
 
+#ifdef _MSC_VER
+#include <binder/IServiceManager.h>
+#include <utils/String16.h>
+#endif
+
 using ::aidl::android::hardware::bluetooth::audio::
     BluetoothAudioProviderFactory;
 
-extern "C" __attribute__((visibility("default"))) binder_status_t
+extern "C" /*__attribute__((visibility("default")))*/ __declspec( dllexport ) binder_status_t
 createIBluetoothAudioProviderFactory() {
   auto factory = ::ndk::SharedRefBase::make<BluetoothAudioProviderFactory>();
   const std::string instance_name =
