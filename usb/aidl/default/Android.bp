@@ -34,11 +34,23 @@ cc_binary {
         "Usb.cpp",
     ],
     shared_libs: [
-        "android.hardware.usb-V1-ndk",
+        "android.hardware.usb-V3-ndk",
         "libbase",
         "libbinder_ndk",
-	"libcutils",
+        "libcutils",
         "liblog",
         "libutils",
     ],
+}
+
+prebuilt_etc {
+    name: "android.hardware.usb-service.example.xml",
+    src: "android.hardware.usb-service.example.xml",
+    sub_dir: "vintf",
+    installable: false,
+}
+
+filegroup {
+    name: "android.hardware.usb-service.example.rc",
+    srcs: ["android.hardware.usb-service.example.rc"],
 }

@@ -17,7 +17,6 @@
 #include <aidl/android/hardware/radio/RadioAccessFamily.h>
 #include <aidl/android/hardware/radio/config/IRadioConfig.h>
 #include <aidl/android/hardware/radio/data/ApnTypes.h>
-#include <android-base/logging.h>
 #include <android/binder_manager.h>
 
 #include "radio_data_utils.h"
@@ -25,6 +24,7 @@
 #define ASSERT_OK(ret) ASSERT_TRUE(ret.isOk())
 
 void RadioDataTest::SetUp() {
+    RadioServiceTest::SetUp();
     std::string serviceName = GetParam();
 
     if (!isServiceValidForDeviceConfiguration(serviceName)) {
@@ -38,8 +38,6 @@ void RadioDataTest::SetUp() {
 
     radioRsp_data = ndk::SharedRefBase::make<RadioDataResponse>(*this);
     ASSERT_NE(nullptr, radioRsp_data.get());
-
-    count_ = 0;
 
     radioInd_data = ndk::SharedRefBase::make<RadioDataIndication>(*this);
     ASSERT_NE(nullptr, radioInd_data.get());
@@ -70,6 +68,12 @@ ndk::ScopedAStatus RadioDataTest::getDataCallList() {
  * Test IRadioData.setupDataCall() for the response returned.
  */
 TEST_P(RadioDataTest, setupDataCall) {
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "setupDataCall : required FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     serial = GetRandomSerialNumber();
 
     AccessNetwork accessNetwork = AccessNetwork::EUTRAN;
@@ -137,15 +141,33 @@ TEST_P(RadioDataTest, setupDataCall) {
  * Test IRadioData.setupDataCall() with osAppId for the response returned.
  */
 TEST_P(RadioDataTest, setupDataCall_osAppId) {
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "Skipping setupDataCall_osAppId "
+                            "due to undefined FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     serial = GetRandomSerialNumber();
 
     AccessNetwork accessNetwork = AccessNetwork::EUTRAN;
 
     TrafficDescriptor trafficDescriptor;
     OsAppId osAppId;
-    std::string osAppIdString("osAppId");
-    std::vector<unsigned char> osAppIdVec(osAppIdString.begin(), osAppIdString.end());
-    osAppId.osAppId = osAppIdVec;
+    osAppId.osAppId = {static_cast<unsigned char>(-105), static_cast<unsigned char>(-92),
+                       static_cast<unsigned char>(-104), static_cast<unsigned char>(-29),
+                       static_cast<unsigned char>(-4),   static_cast<unsigned char>(-110),
+                       static_cast<unsigned char>(92),   static_cast<unsigned char>(-108),
+                       static_cast<unsigned char>(-119), static_cast<unsigned char>(-122),
+                       static_cast<unsigned char>(3),    static_cast<unsigned char>(51),
+                       static_cast<unsigned char>(-48),  static_cast<unsigned char>(110),
+                       static_cast<unsigned char>(78),   static_cast<unsigned char>(71),
+                       static_cast<unsigned char>(10),   static_cast<unsigned char>(69),
+                       static_cast<unsigned char>(78),   static_cast<unsigned char>(84),
+                       static_cast<unsigned char>(69),   static_cast<unsigned char>(82),
+                       static_cast<unsigned char>(80),   static_cast<unsigned char>(82),
+                       static_cast<unsigned char>(73),   static_cast<unsigned char>(83),
+                       static_cast<unsigned char>(69)};
     trafficDescriptor.osAppId = osAppId;
 
     DataProfileInfo dataProfileInfo;
@@ -205,7 +227,8 @@ TEST_P(RadioDataTest, setupDataCall_osAppId) {
         ASSERT_TRUE(CheckAnyOfErrors(radioRsp_data->rspInfo.error,
                                      {RadioError::NONE, RadioError::RADIO_NOT_AVAILABLE,
                                       RadioError::OP_NOT_ALLOWED_BEFORE_REG_TO_NW}));
-        if (radioRsp_data->setupDataCallResult.trafficDescriptors.size() <= 0) {
+        if (radioRsp_data->setupDataCallResult.trafficDescriptors.size() <= 0 ||
+            !radioRsp_data->setupDataCallResult.trafficDescriptors[0].osAppId.has_value()) {
             return;
         }
         EXPECT_EQ(trafficDescriptor.osAppId.value().osAppId,
@@ -217,25 +240,35 @@ TEST_P(RadioDataTest, setupDataCall_osAppId) {
  * Test IRadioData.getSlicingConfig() for the response returned.
  */
 TEST_P(RadioDataTest, getSlicingConfig) {
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "Skipping getSlicingConfig "
+                            "due to undefined FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     serial = GetRandomSerialNumber();
     radio_data->getSlicingConfig(serial);
     EXPECT_EQ(std::cv_status::no_timeout, wait());
     EXPECT_EQ(RadioResponseType::SOLICITED, radioRsp_data->rspInfo.type);
     EXPECT_EQ(serial, radioRsp_data->rspInfo.serial);
-    if (getRadioHalCapabilities()) {
-        ASSERT_TRUE(CheckAnyOfErrors(radioRsp_data->rspInfo.error,
-                                     {RadioError::REQUEST_NOT_SUPPORTED}));
-    } else {
-        ASSERT_TRUE(CheckAnyOfErrors(radioRsp_data->rspInfo.error,
-                                     {RadioError::NONE, RadioError::RADIO_NOT_AVAILABLE,
-                                      RadioError::INTERNAL_ERR, RadioError::MODEM_ERR}));
-    }
+    ASSERT_TRUE(CheckAnyOfErrors(radioRsp_data->rspInfo.error,
+                                 {RadioError::NONE, RadioError::RADIO_NOT_AVAILABLE,
+                                  RadioError::INTERNAL_ERR, RadioError::MODEM_ERR,
+                                  RadioError::REQUEST_NOT_SUPPORTED}));
 }
 
 /*
  * Test IRadioData.setDataThrottling() for the response returned.
  */
 TEST_P(RadioDataTest, setDataThrottling) {
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "Skipping setDataThrottling "
+                            "due to undefined FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     serial = GetRandomSerialNumber();
 
     ndk::ScopedAStatus res = radio_data->setDataThrottling(
@@ -314,6 +347,13 @@ TEST_P(RadioDataTest, setDataThrottling) {
  * Test IRadioData.setInitialAttachApn() for the response returned.
  */
 TEST_P(RadioDataTest, setInitialAttachApn) {
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "Skipping setInitialAttachApn "
+                            "due to undefined FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     serial = GetRandomSerialNumber();
 
     // Create a dataProfileInfo
@@ -357,6 +397,13 @@ TEST_P(RadioDataTest, setInitialAttachApn) {
  * Test IRadioData.setDataProfile() for the response returned.
  */
 TEST_P(RadioDataTest, setDataProfile) {
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "Skipping setDataProfile "
+                            "due to undefined FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     serial = GetRandomSerialNumber();
 
     // Create a dataProfileInfo
@@ -403,6 +450,13 @@ TEST_P(RadioDataTest, setDataProfile) {
  * Test IRadioData.deactivateDataCall() for the response returned.
  */
 TEST_P(RadioDataTest, deactivateDataCall) {
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "Skipping deactivateDataCall "
+                            "due to undefined FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     serial = GetRandomSerialNumber();
     int cid = 1;
     DataRequestReason reason = DataRequestReason::NORMAL;
@@ -434,6 +488,13 @@ TEST_P(RadioDataTest, deactivateDataCall) {
  * Test IRadioData.startKeepalive() for the response returned.
  */
 TEST_P(RadioDataTest, startKeepalive) {
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "Skipping startKeepalive "
+                            "due to undefined FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     std::vector<KeepaliveRequest> requests = {
             {
                     // Invalid IPv4 source address
@@ -524,8 +585,7 @@ TEST_P(RadioDataTest, startKeepalive) {
 
         ASSERT_TRUE(CheckAnyOfErrors(
                 radioRsp_data->rspInfo.error,
-                {RadioError::NONE, RadioError::RADIO_NOT_AVAILABLE, RadioError::INVALID_ARGUMENTS,
-                 RadioError::REQUEST_NOT_SUPPORTED}));
+                {RadioError::INVALID_ARGUMENTS, RadioError::REQUEST_NOT_SUPPORTED}));
     }
 }
 
@@ -533,6 +593,13 @@ TEST_P(RadioDataTest, startKeepalive) {
  * Test IRadioData.stopKeepalive() for the response returned.
  */
 TEST_P(RadioDataTest, stopKeepalive) {
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "Skipping stopKeepalive "
+                            "due to undefined FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     serial = GetRandomSerialNumber();
 
     radio_data->stopKeepalive(serial, 0xBAD);
@@ -542,15 +609,20 @@ TEST_P(RadioDataTest, stopKeepalive) {
 
     ASSERT_TRUE(
             CheckAnyOfErrors(radioRsp_data->rspInfo.error,
-                             {RadioError::NONE, RadioError::RADIO_NOT_AVAILABLE,
-                              RadioError::INVALID_ARGUMENTS, RadioError::REQUEST_NOT_SUPPORTED}));
+                             {RadioError::INVALID_ARGUMENTS, RadioError::REQUEST_NOT_SUPPORTED}));
 }
 
 /*
  * Test IRadioData.getDataCallList() for the response returned.
  */
 TEST_P(RadioDataTest, getDataCallList) {
-    LOG(DEBUG) << "getDataCallList";
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "Skipping getDataCallList "
+                            "due to undefined FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     serial = GetRandomSerialNumber();
 
     radio_data->getDataCallList(serial);
@@ -564,14 +636,19 @@ TEST_P(RadioDataTest, getDataCallList) {
                 radioRsp_data->rspInfo.error,
                 {RadioError::NONE, RadioError::RADIO_NOT_AVAILABLE, RadioError::SIM_ABSENT}));
     }
-    LOG(DEBUG) << "getDataCallList finished";
 }
 
 /*
  * Test IRadioData.setDataAllowed() for the response returned.
  */
 TEST_P(RadioDataTest, setDataAllowed) {
-    LOG(DEBUG) << "setDataAllowed";
+    if (telephony_flags::enforce_telephony_feature_mapping()) {
+        if (!deviceSupportsFeature(FEATURE_TELEPHONY_DATA)) {
+            GTEST_SKIP() << "Skipping setDataAllowed "
+                            "due to undefined FEATURE_TELEPHONY_DATA";
+        }
+    }
+
     serial = GetRandomSerialNumber();
     bool allow = true;
 
@@ -584,5 +661,4 @@ TEST_P(RadioDataTest, setDataAllowed) {
     if (cardStatus.cardState == CardStatus::STATE_ABSENT) {
         EXPECT_EQ(RadioError::NONE, radioRsp_data->rspInfo.error);
     }
-    LOG(DEBUG) << "setDataAllowed finished";
 }

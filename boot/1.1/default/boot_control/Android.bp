@@ -25,8 +25,6 @@ package {
 
 cc_defaults {
     name: "libboot_control_defaults",
-    vendor: true,
-    recovery_available: true,
     relative_install_path: "hw",
 
     cflags: [
@@ -37,27 +35,36 @@ cc_defaults {
     ],
 
     shared_libs: [
-        "android.hardware.boot@1.1",
-        "libbase",
         "liblog",
     ],
     static_libs: [
-        "libbootloader_message_vendor",
+        "libbootloader_message",
         "libfstab",
     ],
+
 }
 
 cc_library_static {
     name: "libboot_control",
     defaults: ["libboot_control_defaults"],
     export_include_dirs: ["include"],
+    recovery_available: true,
+    vendor_available: true,
 
-    srcs: ["libboot_control.cpp"],
+    srcs: [
+        "libboot_control.cpp",
+    ],
+    static_libs: [
+        "android.hardware.boot@1.1",
+        "libbase",
+    ],
 }
 
 cc_library_shared {
     name: "bootctrl.default",
     defaults: ["libboot_control_defaults"],
+    recovery_available: true,
+    vendor_available: true,
 
     srcs: ["legacy_boot_control.cpp"],
 
@@ -65,6 +72,8 @@ cc_library_shared {
         "libboot_control",
     ],
     shared_libs: [
+        "android.hardware.boot@1.1",
+        "libbase",
         "libhardware",
     ],
 }

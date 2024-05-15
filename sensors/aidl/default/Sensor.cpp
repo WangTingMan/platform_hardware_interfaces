@@ -223,7 +223,7 @@ void AccelSensor::readEventPayload(EventPayload& payload) {
     EventPayload::Vec3 vec3 = {
             .x = 0,
             .y = 0,
-            .z = -9.8,
+            .z = 9.8,
             .status = SensorStatus::ACCURACY_HIGH,
     };
     payload.set<EventPayload::Tag::vec3>(vec3);
@@ -268,7 +268,7 @@ MagnetometerSensor::MagnetometerSensor(int32_t sensorHandle, ISensorsEventCallba
     mSensorInfo.fifoReservedEventCount = 0;
     mSensorInfo.fifoMaxEventCount = 0;
     mSensorInfo.requiredPermission = "";
-    mSensorInfo.flags = 0;
+    mSensorInfo.flags = static_cast<uint32_t>(SensorInfo::SENSOR_FLAG_BITS_DATA_INJECTION);
 };
 
 void MagnetometerSensor::readEventPayload(EventPayload& payload) {
@@ -343,7 +343,7 @@ GyroSensor::GyroSensor(int32_t sensorHandle, ISensorsEventCallback* callback) : 
     mSensorInfo.fifoReservedEventCount = 0;
     mSensorInfo.fifoMaxEventCount = 0;
     mSensorInfo.requiredPermission = "";
-    mSensorInfo.flags = 0;
+    mSensorInfo.flags = static_cast<uint32_t>(SensorInfo::SENSOR_FLAG_BITS_DATA_INJECTION);
 };
 
 void GyroSensor::readEventPayload(EventPayload& payload) {

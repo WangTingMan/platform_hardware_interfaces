@@ -40,6 +40,7 @@ Sensor::Sensor(ISensorsEventCallback* callback)
     : mIsEnabled(false),
       mSamplingPeriodNs(0),
       mLastSampleTimeNs(0),
+      mStopThread(false),
       mCallback(callback),
       mMode(OperationMode::NORMAL) {
     mRunThread = std::thread(startThread, this);
@@ -218,7 +219,7 @@ AccelSensor::AccelSensor(int32_t sensorHandle, ISensorsEventCallback* callback) 
 void AccelSensor::readEventPayload(EventPayload& payload) {
     payload.vec3.x = 0;
     payload.vec3.y = 0;
-    payload.vec3.z = -9.8;
+    payload.vec3.z = 9.8;
     payload.vec3.status = SensorStatus::ACCURACY_HIGH;
 }
 

@@ -1,4 +1,5 @@
 package {
+    default_team: "trendy_team_fwk_uwb",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
     // all of the 'license_kinds' from "hardware_interfaces_license"
@@ -18,12 +19,13 @@ aidl_interface {
     backend: {
         java: {
             sdk_version: "module_Tiramisu",
-            enabled: false,
+            enabled: true,
+            apex_available: [
+                "//apex_available:platform",
+                "com.android.uwb",
+            ],
         },
         ndk: {
-            vndk: {
-                enabled: true,
-            },
             apex_available: [
                 "//apex_available:platform",
                 "com.android.uwb",
@@ -50,6 +52,7 @@ aidl_interface {
 
 aidl_interface {
     name: "android.hardware.uwb.fira_android",
+    owner: "google",
     vendor_available: true,
     srcs: ["android/hardware/uwb/fira_android/*.aidl"],
     stability: "vintf",
@@ -74,6 +77,11 @@ aidl_interface {
             version: "1",
             imports: [],
         },
+        {
+            version: "2",
+            imports: [],
+        },
+
     ],
 
 }

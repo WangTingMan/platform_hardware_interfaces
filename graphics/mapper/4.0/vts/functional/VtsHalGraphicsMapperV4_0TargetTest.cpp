@@ -29,12 +29,14 @@
 #include <aidlcommonsupport/NativeHandle.h>
 
 #include <android-base/logging.h>
+#include <android-base/properties.h>
 #include <android-base/unique_fd.h>
 #include <android/sync.h>
 #include <gralloctypes/Gralloc4.h>
 #include <gtest/gtest.h>
 #include <hidl/GtestPrinter.h>
 #include <hidl/ServiceManagement.h>
+
 #include <mapper-vts/4.0/MapperVts.h>
 #include <system/graphics.h>
 
@@ -675,7 +677,7 @@ TEST_P(GraphicsMapperHidlTest, FreeBufferNegative) {
 
     const native_handle_t* clonedBufferHandle;
     ASSERT_NO_FATAL_FAILURE(clonedBufferHandle = mGralloc->allocate(mDummyDescriptorInfo, false));
-    error = mGralloc->getMapper()->freeBuffer(invalidHandle);
+    error = mGralloc->getMapper()->freeBuffer(const_cast<native_handle_t*>(clonedBufferHandle));
     EXPECT_EQ(Error::BAD_BUFFER, error)
             << "freeBuffer with un-imported handle did not fail with BAD_BUFFER";
 
@@ -952,7 +954,6 @@ TEST_P(GraphicsMapperHidlTest, Lock_RAW10) {
     EXPECT_EQ(PlaneLayoutComponentType::RAW,
               static_cast<PlaneLayoutComponentType>(planeLayoutComponent.type.value));
     EXPECT_EQ(0, planeLayoutComponent.offsetInBits % 8);
-    EXPECT_EQ(-1, planeLayoutComponent.sizeInBits);
 
     ASSERT_NO_FATAL_FAILURE(fence.reset(mGralloc->unlock(bufferHandle)));
 }
@@ -994,12 +995,14 @@ TEST_P(GraphicsMapperHidlTest, Lock_RAW12) {
     EXPECT_EQ(PlaneLayoutComponentType::RAW,
               static_cast<PlaneLayoutComponentType>(planeLayoutComponent.type.value));
     EXPECT_EQ(0, planeLayoutComponent.offsetInBits % 8);
-    EXPECT_EQ(-1, planeLayoutComponent.sizeInBits);
 
     ASSERT_NO_FATAL_FAILURE(fence.reset(mGralloc->unlock(bufferHandle)));
 }
 
 TEST_P(GraphicsMapperHidlTest, Lock_YCBCR_P010) {
+    if (base::GetIntProperty("ro.vendor.api_level", __ANDROID_API_FUTURE__) < __ANDROID_API_T__) {
+        GTEST_SKIP() << "Old vendor grallocs may not support P010";
+    }
     auto info = mDummyDescriptorInfo;
     info.format = PixelFormat::YCBCR_P010;
 
@@ -2220,11 +2223,14 @@ TEST_P(GraphicsMapperHidlTest, SetBadMetadata) {
     // Keep optional metadata types below and populate the encoded metadata vec
     // with some arbitrary different metadata because the common gralloc4::decode*()
     // functions do not distinguish between an empty vec and bad value.
-    ASSERT_EQ(NO_ERROR, gralloc4::encodeDataspace(Dataspace::SRGB_LINEAR, &vec));
-    ASSERT_EQ(Error::UNSUPPORTED,
-              mGralloc->set(bufferHandle, gralloc4::MetadataType_Smpte2086, vec));
-    ASSERT_EQ(Error::UNSUPPORTED,
-              mGralloc->set(bufferHandle, gralloc4::MetadataType_Cta861_3, vec));
+    if (base::GetIntProperty("ro.vendor.api_level", __ANDROID_API_FUTURE__) >= __ANDROID_API_T__) {
+        // Some old grallocs shipped with broken validation.
+        ASSERT_EQ(NO_ERROR, gralloc4::encodeDataspace(Dataspace::SRGB_LINEAR, &vec));
+        ASSERT_EQ(Error::UNSUPPORTED,
+                  mGralloc->set(bufferHandle, gralloc4::MetadataType_Smpte2086, vec));
+        ASSERT_EQ(Error::UNSUPPORTED,
+                  mGralloc->set(bufferHandle, gralloc4::MetadataType_Cta861_3, vec));
+    }
 }
 
 /**

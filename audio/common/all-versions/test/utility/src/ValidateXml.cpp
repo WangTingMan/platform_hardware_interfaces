@@ -19,6 +19,7 @@
 
 #include <numeric>
 
+#include <libxml/parser.h>
 #define LIBXML_SCHEMAS_ENABLED
 #include <libxml/xmlschemastypes.h>
 #define LIBXML_XINCLUDE_ENABLED
@@ -63,11 +64,8 @@ struct Libxml2Global {
         xmlSetGenericErrorFunc(this, errorCb);
     }
     ~Libxml2Global() {
-        // TODO: check if all those cleanup are needed
         xmlSetGenericErrorFunc(nullptr, nullptr);
-        xmlSchemaCleanupTypes();
         xmlCleanupParser();
-        xmlCleanupThreads();
     }
 
     const std::string& getErrors() { return errors; }

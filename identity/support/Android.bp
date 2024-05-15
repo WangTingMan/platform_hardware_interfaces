@@ -22,15 +22,8 @@ package {
     default_applicable_licenses: ["hardware_interfaces_license"],
 }
 
-cc_library {
-    name: "android.hardware.identity-support-lib",
-    vendor_available: true,
-    srcs: [
-        "src/IdentityCredentialSupport.cpp",
-    ],
-    export_include_dirs: [
-        "include",
-    ],
+cc_defaults {
+    name: "android.hardware.identity-support-lib-deps",
     shared_libs: [
         "android.hardware.keymaster@4.0",
         "libcrypto",
@@ -47,74 +40,37 @@ cc_library {
     ],
 }
 
+cc_library {
+    name: "android.hardware.identity-support-lib",
+    vendor_available: true,
+    defaults: [
+        "android.hardware.identity-support-lib-deps",
+    ],
+    srcs: [
+        "src/IdentityCredentialSupport.cpp",
+    ],
+    export_include_dirs: [
+        "include",
+    ],
+}
+
 cc_test {
     name: "android.hardware.identity-support-lib-test",
     srcs: [
         "tests/IdentityCredentialSupportTest.cpp",
     ],
+    defaults: [
+        "android.hardware.identity-support-lib-deps",
+    ],
     shared_libs: [
-        "android.hardware.identity-support-lib",
         "libcrypto",
         "libbase",
         "libhidlbase",
         "libhardware",
     ],
     static_libs: [
+        "android.hardware.identity-support-lib",
         "libcppbor_external",
-        "libgmock",
-    ],
-    test_suites: ["general-tests"],
-}
-
-// --
-
-cc_library {
-    name: "libcppbor",
-    vendor_available: true,
-    host_supported: true,
-    srcs: [
-        "src/cppbor.cpp",
-        "src/cppbor_parse.cpp",
-    ],
-    export_include_dirs: [
-        "include/cppbor",
-    ],
-    shared_libs: [
-        "libbase",
-    ],
-}
-
-cc_test {
-    name: "cppbor_test",
-    tidy_timeout_srcs: [
-        "tests/cppbor_test.cpp",
-    ],
-    srcs: [
-        "tests/cppbor_test.cpp",
-    ],
-    shared_libs: [
-        "libcppbor_external",
-        "libbase",
-    ],
-    static_libs: [
-        "libgmock",
-    ],
-    test_suites: ["general-tests"],
-}
-
-cc_test_host {
-    name: "cppbor_host_test",
-    tidy_timeout_srcs: [
-        "tests/cppbor_test.cpp",
-    ],
-    srcs: [
-        "tests/cppbor_test.cpp",
-    ],
-    shared_libs: [
-        "libcppbor_external",
-        "libbase",
-    ],
-    static_libs: [
         "libgmock",
     ],
     test_suites: ["general-tests"],

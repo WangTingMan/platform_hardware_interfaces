@@ -1,4 +1,5 @@
 package {
+    default_team: "trendy_team_input_framework",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
     // all of the 'license_kinds' from "hardware_interfaces_license"
@@ -9,6 +10,7 @@ package {
 
 aidl_interface {
     name: "android.hardware.input.common",
+    host_supported: true,
     vendor_available: true,
     srcs: ["android/hardware/input/common/*.aidl"],
     stability: "vintf",
@@ -18,6 +20,9 @@ aidl_interface {
         },
         java: {
             enabled: false,
+        },
+        rust: {
+            enabled: true,
         },
     },
     versions_with_info: [

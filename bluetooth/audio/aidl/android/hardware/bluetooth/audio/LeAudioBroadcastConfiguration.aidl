@@ -17,6 +17,8 @@
 package android.hardware.bluetooth.audio;
 
 import android.hardware.bluetooth.audio.CodecType;
+import android.hardware.bluetooth.audio.ConfigurationFlags;
+import android.hardware.bluetooth.audio.LeAudioBisConfiguration;
 import android.hardware.bluetooth.audio.LeAudioCodecConfiguration;
 
 @VintfStability
@@ -35,6 +37,19 @@ parcelable LeAudioBroadcastConfiguration {
          */
         int audioChannelAllocation;
         LeAudioCodecConfiguration leAudioCodecConfig;
+        /*
+         * Pcm stream id to identify the source for given streamHandle.
+         */
+        char pcmStreamId;
+        /*
+         * LE Audio BIS configuration
+         */
+        @nullable LeAudioBisConfiguration bisConfiguration;
+        /*
+         * Additional flags, used to request configurations with special
+         * features
+         */
+        @nullable ConfigurationFlags flags;
     }
     CodecType codecType;
     BroadcastStreamMap[] streamMap;

@@ -23,13 +23,16 @@
 #include <aidl/android/hardware/bluetooth/audio/LatencyMode.h>
 #include <aidl/android/hardware/bluetooth/audio/SessionType.h>
 #include <fmq/AidlMessageQueue.h>
-#include <hardware/audio.h>
 
 #include <mutex>
 #include <unordered_map>
 #include <vector>
 
 #include "LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h"
+// To avoid inclusion of hardware/audio.h
+struct sink_metadata;
+struct source_metadata;
+
 namespace aidl {
 namespace android {
 namespace hardware {
@@ -184,6 +187,9 @@ class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS BluetoothAudioSession {
   bool GetPresentationPosition(PresentationPosition& presentation_position);
   void UpdateSourceMetadata(const struct source_metadata& source_metadata);
   void UpdateSinkMetadata(const struct sink_metadata& sink_metadata);
+  // New versions for AIDL-only clients.
+  bool UpdateSourceMetadata(const SourceMetadata& hal_source_metadata);
+  bool UpdateSinkMetadata(const SinkMetadata& hal_sink_metadata);
 
   std::vector<LatencyMode> GetSupportedLatencyModes();
   void SetLatencyMode(const LatencyMode& latency_mode);

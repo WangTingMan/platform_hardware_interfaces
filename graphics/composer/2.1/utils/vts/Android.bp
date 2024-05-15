@@ -15,6 +15,7 @@
 //
 
 package {
+    default_team: "trendy_team_android_core_graphics_stack",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
     // all of the 'license_kinds' from "hardware_interfaces_license"
@@ -25,26 +26,23 @@ package {
 
 cc_library_static {
     name: "android.hardware.graphics.composer@2.1-vts",
-    defaults: ["hidl_defaults"],
+    defaults: [
+        "hidl_defaults",
+    ],
     srcs: [
         "ComposerVts.cpp",
         "GraphicsComposerCallback.cpp",
         "TestCommandReader.cpp",
     ],
+    shared_libs: [
+        "libui",
+    ],
     static_libs: [
-        "android.hardware.graphics.allocator-V1-ndk",
         "android.hardware.graphics.composer@2.1",
-        "android.hardware.graphics.mapper@2.0-vts",
-        "android.hardware.graphics.mapper@3.0-vts",
-        "android.hardware.graphics.mapper@4.0-vts",
         "libgtest",
     ],
     export_static_lib_headers: [
-        "android.hardware.graphics.allocator-V1-ndk",
         "android.hardware.graphics.composer@2.1",
-        "android.hardware.graphics.mapper@2.0-vts",
-        "android.hardware.graphics.mapper@3.0-vts",
-        "android.hardware.graphics.mapper@4.0-vts",
     ],
     header_libs: [
         "android.hardware.graphics.composer@2.1-command-buffer",
