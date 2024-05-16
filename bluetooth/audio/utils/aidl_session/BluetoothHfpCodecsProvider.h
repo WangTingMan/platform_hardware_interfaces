@@ -24,6 +24,8 @@
 #include "aidl_android_hardware_bluetooth_audio_hfp_setting.h"
 #include "aidl_android_hardware_bluetooth_audio_hfp_setting_enums.h"
 
+#include "LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h"
+
 namespace aidl {
 namespace android {
 namespace hardware {
@@ -32,7 +34,7 @@ namespace audio {
 
 using hfp::setting::HfpOffloadSetting;
 
-class BluetoothHfpCodecsProvider {
+class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS BluetoothHfpCodecsProvider {
  public:
   static std::optional<HfpOffloadSetting> ParseFromHfpOffloadSettingFile();
 

@@ -43,12 +43,6 @@ static const std::string kHfpOffloadProviderName =
     "HFP_OFFLOAD_HARDWARE_OFFLOAD_PROVIDER";
 
 BluetoothAudioProviderFactory::BluetoothAudioProviderFactory() {
-#ifdef _MSC_VER
-    mInvokeOpenProvider = std::bind( &BluetoothAudioProviderFactory::openProvider_impl,
-                                     this, std::placeholders::_1, std::placeholders::_2 );
-    mGetProviderCapabilities = std::bind( &BluetoothAudioProviderFactory::getProviderCapabilities_impl,
-                                          this, std::placeholders::_1, std::placeholders::_2 );
-#endif
 }
 
 #ifdef _MSC_VER

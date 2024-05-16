@@ -23,10 +23,11 @@
 #include <memory>
 
 #include "A2dpOffloadCodec.h"
+#include "ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS.h"
 
 namespace aidl::android::hardware::bluetooth::audio {
 
-class A2dpOffloadCodecFactory {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API A2dpOffloadCodecFactory {
   std::vector<std::shared_ptr<const A2dpOffloadCodec>> ranked_codecs_;
 
  public:

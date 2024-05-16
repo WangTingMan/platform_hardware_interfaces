@@ -25,6 +25,7 @@
 #include "aidl/android/hardware/bluetooth/audio/CodecInfo.h"
 #include "aidl/android/hardware/bluetooth/audio/SessionType.h"
 #include "aidl_android_hardware_bluetooth_audio_setting.h"
+#include "LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h"
 
 namespace aidl {
 namespace android {
@@ -32,7 +33,7 @@ namespace hardware {
 namespace bluetooth {
 namespace audio {
 
-class BluetoothLeAudioCodecsProvider {
+class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS BluetoothLeAudioCodecsProvider {
  public:
   static std::optional<setting::LeAudioOffloadSetting>
   ParseFromLeAudioOffloadSettingFile();

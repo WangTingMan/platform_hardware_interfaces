@@ -17,6 +17,7 @@
 #pragma once
 
 #include "BluetoothAudioProvider.h"
+#include "ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS.h"
 
 namespace aidl {
 namespace android {
@@ -24,7 +25,7 @@ namespace hardware {
 namespace bluetooth {
 namespace audio {
 
-class LeAudioSoftwareAudioProvider : public BluetoothAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API LeAudioSoftwareAudioProvider : public BluetoothAudioProvider {
  public:
   LeAudioSoftwareAudioProvider();
 
@@ -43,17 +44,17 @@ class LeAudioSoftwareAudioProvider : public BluetoothAudioProvider {
   ndk::ScopedAStatus onSessionReady(DataMQDesc* _aidl_return) override;
 };
 
-class LeAudioSoftwareOutputAudioProvider : public LeAudioSoftwareAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API LeAudioSoftwareOutputAudioProvider : public LeAudioSoftwareAudioProvider {
  public:
   LeAudioSoftwareOutputAudioProvider();
 };
 
-class LeAudioSoftwareInputAudioProvider : public LeAudioSoftwareAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API LeAudioSoftwareInputAudioProvider : public LeAudioSoftwareAudioProvider {
  public:
   LeAudioSoftwareInputAudioProvider();
 };
 
-class LeAudioSoftwareBroadcastAudioProvider
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API LeAudioSoftwareBroadcastAudioProvider
     : public LeAudioSoftwareAudioProvider {
  public:
   LeAudioSoftwareBroadcastAudioProvider();

@@ -80,13 +80,6 @@ A2dpSoftwareAudioProvider::A2dpSoftwareAudioProvider()
     ALOGE_IF(data_mq && !data_mq->isValid(), "data MQ is invalid");
   }
 
-#ifdef _MSC_VER
-  m_startSession = std::bind( &A2dpSoftwareAudioProvider::startSession_impl,
-                              this, std::placeholders::_1, std::placeholders::_2,
-                              std::placeholders::_3, std::placeholders::_4 
-                            );
-#endif
-
 }
 
 bool A2dpSoftwareAudioProvider::isValid(const SessionType& sessionType) {

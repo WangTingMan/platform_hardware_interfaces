@@ -19,6 +19,7 @@
 #include <aidl/android/hardware/bluetooth/audio/BnBluetoothAudioProviderFactory.h>
 
 #include "A2dpOffloadCodecFactory.h"
+#include "ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS.h"
 
 namespace aidl {
 namespace android {
@@ -26,7 +27,7 @@ namespace hardware {
 namespace bluetooth {
 namespace audio {
 
-class BluetoothAudioProviderFactory : public BnBluetoothAudioProviderFactory {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API BluetoothAudioProviderFactory : public BnBluetoothAudioProviderFactory {
   const A2dpOffloadCodecFactory a2dp_offload_codec_factory_;
 
  public:

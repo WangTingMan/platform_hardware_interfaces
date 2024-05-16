@@ -19,6 +19,7 @@
 #include <aidl/android/hardware/bluetooth/audio/LatencyMode.h>
 #include <aidl/android/hardware/bluetooth/audio/SessionType.h>
 #include <fmq/AidlMessageQueue.h>
+#include "ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS.h"
 
 using ::aidl::android::hardware::common::fmq::MQDescriptor;
 using ::aidl::android::hardware::common::fmq::SynchronizedReadWrite;
@@ -52,7 +53,7 @@ enum : bool {
   kEnableA2dpCodecExtensibility = false,
 };
 
-class BluetoothAudioProvider : public BnBluetoothAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API BluetoothAudioProvider : public BnBluetoothAudioProvider {
  public:
   BluetoothAudioProvider();
   ndk::ScopedAStatus startSession(

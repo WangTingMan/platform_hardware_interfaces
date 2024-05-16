@@ -560,7 +560,7 @@ bool BluetoothAudioSession::UpdateSourceMetadata(
     const SourceMetadata& hal_source_metadata) {
   std::lock_guard<std::recursive_mutex> guard(mutex_);
   if (!IsSessionReady()) {
-    LOG(DEBUG) << __func__ << " - SessionType=" << toString(session_type_)
+    LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
                << " has NO session";
     return false;
   }
@@ -585,7 +585,7 @@ bool BluetoothAudioSession::UpdateSinkMetadata(
     const SinkMetadata& hal_sink_metadata) {
   std::lock_guard<std::recursive_mutex> guard(mutex_);
   if (!IsSessionReady()) {
-    LOG(DEBUG) << __func__ << " - SessionType=" << toString(session_type_)
+    LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_)
                << " has NO session";
     return false;
   }
@@ -640,7 +640,7 @@ std::vector<LatencyMode> BluetoothAudioSession::GetSupportedLatencyModes() {
         supported_latency_modes.push_back(mode);
       }
     }
-    LOG(DEBUG) << __func__ << " - Supported LatencyMode="
+    LOG(INFO) << __func__ << " - Supported LatencyMode="
                << toString(supported_latency_modes);
     return supported_latency_modes;
   }

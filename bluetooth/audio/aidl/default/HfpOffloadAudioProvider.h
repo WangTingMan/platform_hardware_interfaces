@@ -17,6 +17,7 @@
 #pragma once
 
 #include "BluetoothAudioProvider.h"
+#include "ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS.h"
 
 namespace aidl {
 namespace android {
@@ -24,7 +25,7 @@ namespace hardware {
 namespace bluetooth {
 namespace audio {
 
-class HfpOffloadAudioProvider : public BluetoothAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API HfpOffloadAudioProvider : public BluetoothAudioProvider {
  public:
   HfpOffloadAudioProvider();
 

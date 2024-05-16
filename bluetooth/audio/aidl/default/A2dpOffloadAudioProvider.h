@@ -18,6 +18,7 @@
 
 #include "A2dpOffloadCodecFactory.h"
 #include "BluetoothAudioProvider.h"
+#include "ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS.h"
 
 namespace aidl {
 namespace android {
@@ -25,7 +26,7 @@ namespace hardware {
 namespace bluetooth {
 namespace audio {
 
-class A2dpOffloadAudioProvider : public BluetoothAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API A2dpOffloadAudioProvider : public BluetoothAudioProvider {
  public:
   bool isValid(const SessionType& session_type) override;
 
@@ -53,12 +54,12 @@ class A2dpOffloadAudioProvider : public BluetoothAudioProvider {
   ndk::ScopedAStatus onSessionReady(DataMQDesc* _aidl_return) override;
 };
 
-class A2dpOffloadEncodingAudioProvider : public A2dpOffloadAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API A2dpOffloadEncodingAudioProvider : public A2dpOffloadAudioProvider {
  public:
   A2dpOffloadEncodingAudioProvider(const A2dpOffloadCodecFactory&);
 };
 
-class A2dpOffloadDecodingAudioProvider : public A2dpOffloadAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API A2dpOffloadDecodingAudioProvider : public A2dpOffloadAudioProvider {
  public:
   A2dpOffloadDecodingAudioProvider(const A2dpOffloadCodecFactory&);
 };

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "A2dpOffloadCodec.h"
+#include "ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS.h"
 
 namespace aidl::android::hardware::bluetooth::audio {
 
@@ -26,7 +27,7 @@ struct AacParameters : public CodecParameters {
   ObjectType object_type;
 };
 
-class A2dpOffloadCodecAac : public A2dpOffloadCodec {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API A2dpOffloadCodecAac : public A2dpOffloadCodec {
   CodecInfo info_;
 
   A2dpStatus ParseConfiguration(const std::vector<uint8_t>& configuration,

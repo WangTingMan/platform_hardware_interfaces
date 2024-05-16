@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h"
+
 // To avoid inclusion of hardware/audio.h
 struct sink_metadata;
 struct source_metadata;

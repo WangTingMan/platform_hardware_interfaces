@@ -26,6 +26,7 @@
 
 #include "audio_set_configurations_generated.h"
 #include "audio_set_scenarios_generated.h"
+#include "LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h"
 
 namespace aidl {
 namespace android {
@@ -48,7 +49,7 @@ enum class CodecLocation {
   CONTROLLER,
 };
 
-class AudioSetConfigurationProviderJson {
+class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS AudioSetConfigurationProviderJson {
  public:
   static std::vector<LeAudioAseConfigurationSetting>
   GetLeAudioAseConfigurationSettings();

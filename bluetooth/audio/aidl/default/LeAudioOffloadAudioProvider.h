@@ -22,6 +22,7 @@
 #include "aidl/android/hardware/bluetooth/audio/LeAudioAseConfiguration.h"
 #include "aidl/android/hardware/bluetooth/audio/MetadataLtv.h"
 #include "aidl/android/hardware/bluetooth/audio/SessionType.h"
+#include "ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS.h"
 
 namespace aidl {
 namespace android {
@@ -42,7 +43,7 @@ using LeAudioAseQosConfiguration =
 using LeAudioBroadcastConfigurationSetting =
     IBluetoothAudioProvider::LeAudioBroadcastConfigurationSetting;
 
-class LeAudioOffloadAudioProvider : public BluetoothAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API LeAudioOffloadAudioProvider : public BluetoothAudioProvider {
  public:
   LeAudioOffloadAudioProvider();
 
@@ -159,17 +160,17 @@ class LeAudioOffloadAudioProvider : public BluetoothAudioProvider {
   void getBroadcastSettings();
 };
 
-class LeAudioOffloadOutputAudioProvider : public LeAudioOffloadAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API LeAudioOffloadOutputAudioProvider : public LeAudioOffloadAudioProvider {
  public:
   LeAudioOffloadOutputAudioProvider();
 };
 
-class LeAudioOffloadInputAudioProvider : public LeAudioOffloadAudioProvider {
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API LeAudioOffloadInputAudioProvider : public LeAudioOffloadAudioProvider {
  public:
   LeAudioOffloadInputAudioProvider();
 };
 
-class LeAudioOffloadBroadcastAudioProvider
+class ANDROIDHARDWAREBLUETOOTHAUDIOIMPL_EXPORTS_API LeAudioOffloadBroadcastAudioProvider
     : public LeAudioOffloadAudioProvider {
  public:
   LeAudioOffloadBroadcastAudioProvider();

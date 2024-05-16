@@ -52,17 +52,6 @@ static void binderDiedCallbackAidl(void* cookie) {
 BluetoothAudioProvider::BluetoothAudioProvider() {
   death_recipient_ = ::ndk::ScopedAIBinder_DeathRecipient(
       AIBinder_DeathRecipient_new(binderDiedCallbackAidl));
-
-#ifdef _MSC_VER
-  using namespace std::placeholders;
-  m_startSession = std::bind( &BluetoothAudioProvider::impl__startSession, this, _1, _2, _3, _4 );
-  m_endSession = std::bind( &BluetoothAudioProvider::impl__endSession, this );
-  m_streamStarted = std::bind( &BluetoothAudioProvider::impl__streamStarted, this, _1 );
-  m_streamSuspended = std::bind( &BluetoothAudioProvider::impl__streamSuspended, this, _1 );
-  m_updateAudioConfiguration = std::bind( &BluetoothAudioProvider::impl__updateAudioConfiguration, this, _1 );
-  m_setLowLatencyModeAllowed = std::bind( &BluetoothAudioProvider::impl__setLowLatencyModeAllowed, this, _1 ); 
-#endif
-
   AIBinder_DeathRecipient_setOnUnlinked(death_recipient_.get(),
                                         binderUnlinkedCallbackAidl);
 }
