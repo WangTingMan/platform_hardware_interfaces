@@ -59,10 +59,12 @@ class GraphicsCompositionTestBase : public ::testing::Test {
 
         EXPECT_TRUE(mComposerClient->setPowerMode(getPrimaryDisplayId(), PowerMode::ON).isOk());
 
+        const auto format = getHasReadbackBuffer() ? mPixelFormat : common::PixelFormat::RGBA_8888;
+
         ASSERT_NO_FATAL_FAILURE(
                 mTestRenderEngine = std::unique_ptr<TestRenderEngine>(new TestRenderEngine(
                         ::android::renderengine::RenderEngineCreationArgs::Builder()
-                                .setPixelFormat(static_cast<int>(common::PixelFormat::RGBA_8888))
+                                .setPixelFormat(static_cast<int>(format))
                                 .setImageCacheSize(TestRenderEngine::sMaxFrameBufferAcquireBuffers)
                                 .setEnableProtectedContext(false)
                                 .setPrecacheToneMapperShaderOnly(false)
@@ -85,6 +87,7 @@ class GraphicsCompositionTestBase : public ::testing::Test {
     }
 
     void TearDown() override {
+        ASSERT_FALSE(mDisplays.empty());
         ASSERT_TRUE(mComposerClient->setPowerMode(getPrimaryDisplayId(), PowerMode::OFF).isOk());
         ASSERT_TRUE(mComposerClient->tearDown(mWriter.get()));
         mComposerClient.reset();
@@ -493,11 +496,14 @@ TEST_P(GraphicsCompositionTest, ClientComposition) {
             const auto& buffer = graphicBuffer->handle;
             void* clientBufData;
             const auto stride = static_cast<uint32_t>(graphicBuffer->stride);
-            graphicBuffer->lock(clientUsage, layer->getAccessRegion(), &clientBufData);
+            int bytesPerPixel = -1;
+            int bytesPerStride = -1;
+            graphicBuffer->lock(clientUsage, layer->getAccessRegion(), &clientBufData,
+                                &bytesPerPixel, &bytesPerStride);
 
-            ASSERT_NO_FATAL_FAILURE(
-                    ReadbackHelper::fillBuffer(layer->getWidth(), layer->getHeight(), stride,
-                                               clientBufData, clientFormat, expectedColors));
+            ASSERT_NO_FATAL_FAILURE(ReadbackHelper::fillBuffer(
+                    layer->getWidth(), layer->getHeight(), stride, bytesPerPixel, clientBufData,
+                    clientFormat, expectedColors));
             int32_t clientFence;
             const auto unlockStatus = graphicBuffer->unlockAsync(&clientFence);
             ASSERT_EQ(::android::OK, unlockStatus);
@@ -518,6 +524,83 @@ TEST_P(GraphicsCompositionTest, ClientComposition) {
         ASSERT_TRUE(mReader.takeErrors().empty());
 
         ASSERT_NO_FATAL_FAILURE(readbackBuffer.checkReadbackBuffer(expectedColors));
+    }
+}
+
+TEST_P(GraphicsCompositionTest, MixedColorSpaces) {
+    ASSERT_TRUE(
+            mComposerClient->setClientTargetSlotCount(getPrimaryDisplayId(), kClientTargetSlotCount)
+                    .isOk());
+    const auto& [status, properties] = mComposerClient->getOverlaySupport();
+    if (!status.isOk() && status.getExceptionCode() == EX_SERVICE_SPECIFIC &&
+        status.getServiceSpecificError() == IComposerClient::EX_UNSUPPORTED) {
+        GTEST_SUCCEED() << "getOverlaySupport is not supported";
+        return;
+    }
+
+    if (properties.supportMixedColorSpaces == false) {
+        GTEST_SUCCEED() << "supportMixedColorSpaces is not supported";
+        return;
+    }
+
+    for (ColorMode mode : mTestColorModes) {
+        EXPECT_TRUE(mComposerClient
+                            ->setColorMode(getPrimaryDisplayId(), mode, RenderIntent::COLORIMETRIC)
+                            .isOk());
+
+        bool isSupported;
+        ASSERT_NO_FATAL_FAILURE(isSupported = getHasReadbackBuffer());
+        if (!isSupported) {
+            GTEST_SUCCEED() << "Readback not supported or unsupported pixelFormat/dataspace";
+            return;
+        }
+
+        // sRGB layer
+        auto srgbLayer = std::make_shared<TestBufferLayer>(
+                mComposerClient, *mTestRenderEngine, getPrimaryDisplayId(), getDisplayWidth(),
+                getDisplayHeight() / 2, PixelFormat::RGBA_8888, *mWriter);
+        std::vector<Color> sRgbDeviceColors(srgbLayer->getWidth() * srgbLayer->getHeight());
+        ReadbackHelper::fillColorsArea(sRgbDeviceColors, getDisplayWidth(),
+                                       {0, 0, static_cast<int32_t>(srgbLayer->getWidth()),
+                                        static_cast<int32_t>(srgbLayer->getHeight())},
+                                       GREEN);
+        srgbLayer->setDisplayFrame({0, 0, static_cast<int32_t>(srgbLayer->getWidth()),
+                                    static_cast<int32_t>(srgbLayer->getHeight())});
+        srgbLayer->setZOrder(10);
+        srgbLayer->setDataspace(Dataspace::SRGB);
+        ASSERT_NO_FATAL_FAILURE(srgbLayer->setBuffer(sRgbDeviceColors));
+
+        // display P3 layer
+        auto displayP3Layer = std::make_shared<TestBufferLayer>(
+                mComposerClient, *mTestRenderEngine, getPrimaryDisplayId(), getDisplayWidth(),
+                getDisplayHeight() / 2, PixelFormat::RGBA_8888, *mWriter);
+        std::vector<Color> displayP3DeviceColors(
+                static_cast<size_t>(displayP3Layer->getWidth() * displayP3Layer->getHeight()));
+        ReadbackHelper::fillColorsArea(displayP3DeviceColors, getDisplayWidth(),
+                                       {0, 0, static_cast<int32_t>(displayP3Layer->getWidth()),
+                                        static_cast<int32_t>(displayP3Layer->getHeight())},
+                                       RED);
+        displayP3Layer->setDisplayFrame(
+                {0, getDisplayHeight() / 2, getDisplayWidth(), getDisplayHeight()});
+        displayP3Layer->setZOrder(10);
+        displayP3Layer->setDataspace(Dataspace::DISPLAY_P3);
+        ASSERT_NO_FATAL_FAILURE(displayP3Layer->setBuffer(displayP3DeviceColors));
+
+        writeLayers({srgbLayer, displayP3Layer});
+
+        mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
+                                 VtsComposerClient::kNoFrameIntervalNs);
+        execute();
+
+        auto changedCompositionTypes = mReader.takeChangedCompositionTypes(getPrimaryDisplayId());
+        ASSERT_TRUE(changedCompositionTypes.empty());
+
+        mWriter->presentDisplay(getPrimaryDisplayId());
+        execute();
+
+        changedCompositionTypes = mReader.takeChangedCompositionTypes(getPrimaryDisplayId());
+        ASSERT_TRUE(changedCompositionTypes.empty());
+        ASSERT_TRUE(mReader.takeErrors().empty());
     }
 }
 
@@ -597,15 +680,18 @@ TEST_P(GraphicsCompositionTest, DeviceAndClientComposition) {
         const auto& buffer = graphicBuffer->handle;
 
         void* clientBufData;
+        int bytesPerPixel = -1;
+        int bytesPerStride = -1;
         graphicBuffer->lock(clientUsage, {0, 0, getDisplayWidth(), getDisplayHeight()},
-                            &clientBufData);
+                            &clientBufData, &bytesPerPixel, &bytesPerStride);
 
         std::vector<Color> clientColors(
                 static_cast<size_t>(getDisplayWidth() * getDisplayHeight()));
         ReadbackHelper::fillColorsArea(clientColors, getDisplayWidth(), clientFrame, RED);
         ASSERT_NO_FATAL_FAILURE(ReadbackHelper::fillBuffer(
                 static_cast<uint32_t>(getDisplayWidth()), static_cast<uint32_t>(getDisplayHeight()),
-                graphicBuffer->getStride(), clientBufData, clientFormat, clientColors));
+                graphicBuffer->getStride(), bytesPerPixel, clientBufData, clientFormat,
+                clientColors));
         int32_t clientFence;
         const auto unlockStatus = graphicBuffer->unlockAsync(&clientFence);
         ASSERT_EQ(::android::OK, unlockStatus);

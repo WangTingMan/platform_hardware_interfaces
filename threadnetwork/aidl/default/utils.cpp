@@ -20,6 +20,20 @@
 #include <openthread/platform/alarm-milli.h>
 #include <utils/Log.h>
 
+void otLogPlatArgs(otLogLevel aLogLevel, const char* aPlatModuleName, const char* aFormat,
+                   va_list aArgs) {
+    OT_UNUSED_VARIABLE(aPlatModuleName);
+    static const android_LogPriority kLogPriorities[] = {ANDROID_LOG_SILENT, ANDROID_LOG_FATAL,
+                                                         ANDROID_LOG_WARN,   ANDROID_LOG_INFO,
+                                                         ANDROID_LOG_INFO,   ANDROID_LOG_DEBUG};
+
+    if (aLogLevel >= sizeof(kLogPriorities) / sizeof(android_LogPriority)) {
+        return;
+    }
+
+    __android_log_vprint(kLogPriorities[aLogLevel], LOG_TAG, aFormat, aArgs);
+}
+
 void otLogCritPlat(const char* format, ...) {
     va_list args;
 
@@ -28,39 +42,8 @@ void otLogCritPlat(const char* format, ...) {
     va_end(args);
 }
 
-void otLogWarnPlat(const char* format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    __android_log_vprint(ANDROID_LOG_WARN, LOG_TAG, format, args);
-    va_end(args);
-}
-
-void otLogNotePlat(const char* format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    __android_log_vprint(ANDROID_LOG_INFO, LOG_TAG, format, args);
-    va_end(args);
-}
-
-void otLogInfoPlat(const char* format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    __android_log_vprint(ANDROID_LOG_INFO, LOG_TAG, format, args);
-    va_end(args);
-}
-
-void otLogDebgPlat(const char* format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    __android_log_vprint(ANDROID_LOG_DEBUG, LOG_TAG, format, args);
-    va_end(args);
-}
-
 void otDumpDebgPlat(const char* aText, const void* aData, uint16_t aDataLength) {
+#ifdef DEV_BUILD
     constexpr uint16_t kBufSize = 512;
     char buf[kBufSize];
 
@@ -73,6 +56,11 @@ void otDumpDebgPlat(const char* aText, const void* aData, uint16_t aDataLength) 
 
         __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "%s: %s", aText, buf);
     }
+#else
+    OT_UNUSED_VARIABLE(aText);
+    OT_UNUSED_VARIABLE(aData);
+    OT_UNUSED_VARIABLE(aDataLength);
+#endif
 }
 
 OT_TOOL_WEAK void otPlatAlarmMilliFired(otInstance* aInstance) {

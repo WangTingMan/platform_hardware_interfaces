@@ -15,6 +15,7 @@
  */
 
 package {
+    default_team: "trendy_team_aaos_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -26,8 +27,6 @@ cc_test {
         "VehicleHalJsonConfigLoader",
         "VehicleHalUtils",
         "libgtest",
-    ],
-    shared_libs: [
         "libjsoncpp",
     ],
     defaults: ["VehicleHalDefaults"],
@@ -42,8 +41,6 @@ cc_test {
         "VehicleHalJsonConfigLoaderEnableTestProperties",
         "VehicleHalUtils",
         "libgtest",
-    ],
-    shared_libs: [
         "libjsoncpp",
     ],
     defaults: ["VehicleHalDefaults"],

@@ -37,10 +37,44 @@ props {
     prop_name: "vendor.face.virtual.lockout"
   }
   prop {
+    api_name: "lockout_enable"
+    access: ReadWrite
+    prop_name: "persist.vendor.face.virtual.lockout_enable"
+  }
+  prop {
+    api_name: "lockout_permanent_threshold"
+    type: Integer
+    access: ReadWrite
+    prop_name: "persist.vendor.face.virtual.lockout_permanent_threshold"
+  }
+  prop {
+    api_name: "lockout_timed_duration"
+    type: Integer
+    access: ReadWrite
+    prop_name: "persist.vendor.face.virtual.lockout_timed_duration"
+  }
+  prop {
+    api_name: "lockout_timed_enable"
+    access: ReadWrite
+    prop_name: "persist.vendor.face.virtual.lockout_timed_enable"
+  }
+  prop {
+    api_name: "lockout_timed_threshold"
+    type: Integer
+    access: ReadWrite
+    prop_name: "persist.vendor.face.virtual.lockout_timed_threshold"
+  }
+  prop {
     api_name: "next_enrollment"
     type: String
     access: ReadWrite
     prop_name: "vendor.face.virtual.next_enrollment"
+  }
+  prop {
+    api_name: "operation_authenticate_acquired"
+    type: String
+    access: ReadWrite
+    prop_name: "vendor.face.virtual.operation_authenticate_acquired"
   }
   prop {
     api_name: "operation_authenticate_duration"
@@ -49,13 +83,19 @@ props {
     prop_name: "vendor.face.virtual.operation_authenticate_duration"
   }
   prop {
+    api_name: "operation_authenticate_error"
+    type: Integer
+    access: ReadWrite
+    prop_name: "vendor.face.virtual.operation_authenticate_error"
+  }
+  prop {
     api_name: "operation_authenticate_fails"
     access: ReadWrite
     prop_name: "vendor.face.virtual.operation_authenticate_fails"
   }
   prop {
     api_name: "operation_authenticate_latency"
-    type: Integer
+    type: IntegerList
     access: ReadWrite
     prop_name: "vendor.face.virtual.operation_authenticate_latency"
   }
@@ -66,20 +106,15 @@ props {
   }
   prop {
     api_name: "operation_detect_interaction_latency"
-    type: Integer
+    type: IntegerList
     access: ReadWrite
     prop_name: "vendor.face.virtual.operation_detect_interaction_latency"
   }
   prop {
-    api_name: "operation_enroll_fails"
+    api_name: "operation_enroll_latency"
+    type: IntegerList
     access: ReadWrite
-    prop_name: "vendor.face.virtual.operation_enroll_fails"
-  }
-  prop {
-    api_name: "operation_start_enroll_latency"
-    type: Integer
-    access: ReadWrite
-    prop_name: "vendor.face.virtual.operation_start_enroll_latency"
+    prop_name: "vendor.face.virtual.operation_enroll_latency"
   }
   prop {
     api_name: "strength"

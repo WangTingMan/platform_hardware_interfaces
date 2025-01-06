@@ -42,10 +42,10 @@ aidl_interface {
             enabled: false,
         },
         ndk: {
-            vndk: {
-                enabled: false,
-            },
             min_sdk_version: "29",
+        },
+        rust: {
+            enabled: true,
         },
     },
     versions_with_info: [

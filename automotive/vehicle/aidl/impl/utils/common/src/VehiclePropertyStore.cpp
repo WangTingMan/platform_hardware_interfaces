@@ -153,10 +153,9 @@ VhalResult<void> VehiclePropertyStore::writeValue(VehiclePropValuePool::Recyclab
                 propValue->status = oldStatus;
             }
 
+            // areaId and propId must be the same between valueToUpdate and propValue.
             valueUpdated = (valueToUpdate->value != propValue->value ||
-                            valueToUpdate->status != propValue->status ||
-                            valueToUpdate->prop != propValue->prop ||
-                            valueToUpdate->areaId != propValue->areaId);
+                            valueToUpdate->status != propValue->status);
         } else if (!updateStatus) {
             propValue->status = VehiclePropertyStatus::AVAILABLE;
         }
@@ -173,9 +172,7 @@ VhalResult<void> VehiclePropertyStore::writeValue(VehiclePropValuePool::Recyclab
     }
 
     if (onValuesChangeCallback == nullptr && onValueChangeCallback == nullptr) {
-        ALOGW("No callback registered, ignoring property update for propId: %" PRId32
-              ", area ID: %" PRId32,
-              propId, areaId);
+        // No callback registered.
         return {};
     }
 
@@ -292,7 +289,7 @@ std::vector<VehiclePropValuePool::RecyclableType> VehiclePropertyStore::readAllV
 
     for (auto const& [_, record] : mRecordsByPropId) {
         for (auto const& [_, value] : record.values) {
-            allValues.push_back(std::move(mValuePool->obtain(*value)));
+            allValues.push_back(mValuePool->obtain(*value));
         }
     }
 
@@ -311,7 +308,7 @@ VehiclePropertyStore::ValuesResultType VehiclePropertyStore::readValuesForProper
     }
 
     for (auto const& [_, value] : record->values) {
-        values.push_back(std::move(mValuePool->obtain(*value)));
+        values.push_back(mValuePool->obtain(*value));
     }
     return values;
 }

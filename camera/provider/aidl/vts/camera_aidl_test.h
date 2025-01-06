@@ -99,6 +99,11 @@ using ::ndk::ScopedAStatus;
 
 class DeviceCb;  // Forward declare to break circular header dependency
 
+template <typename T>
+bool contains(const std::set<T>& container, T value) {
+    return container.find(value) != container.end();
+}
+
 class CameraAidlTest : public ::testing::TestWithParam<std::string> {
   public:
     enum SystemCameraKind {
@@ -120,6 +125,8 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
          */
         HIDDEN_SECURE_CAMERA
     };
+
+    enum BufferManagerType { FRAMEWORK = 0, HAL, SESSION };
 
     struct AvailableStream {
         int32_t width;
@@ -200,11 +207,12 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
             std::shared_ptr<ICameraDeviceSession>* session /*out*/, Stream* stream /*out*/,
             std::vector<HalStream>* halStreams, bool* supportsPartialResults /*out*/,
             int32_t* partialResultCount /*out*/, std::shared_ptr<DeviceCb>* outCb /*out*/,
-            int32_t* jpegBufferSize /*out*/, bool* useHalBufManager /*out*/);
+            int32_t* jpegBufferSize /*out*/, std::set<int32_t>* halBufManagedStreamIds /*out*/);
 
     ndk::ScopedAStatus configureStreams(std::shared_ptr<ICameraDeviceSession>& session,
                                         const StreamConfiguration& config,
-                                        bool sessionHalBufferManager, bool* useHalBufManager,
+                                        BufferManagerType bufferManagerType,
+                                        std::set<int32_t>* halBufManagedStreamIds,
                                         std::vector<HalStream>* halStreams);
 
     void configureStreams(
@@ -212,8 +220,9 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
             PixelFormat format, std::shared_ptr<ICameraDeviceSession>* session /*out*/,
             Stream* previewStream /*out*/, std::vector<HalStream>* halStreams /*out*/,
             bool* supportsPartialResults /*out*/, int32_t* partialResultCount /*out*/,
-            bool* useHalBufManager /*out*/, std::shared_ptr<DeviceCb>* outCb /*out*/,
-            uint32_t streamConfigCounter, bool maxResolution,
+            std::set<int32_t>* halBufManagedStreamIds /*out*/,
+            std::shared_ptr<DeviceCb>* outCb /*out*/, uint32_t streamConfigCounter,
+            bool maxResolution,
             RequestAvailableDynamicRangeProfilesMap dynamicRangeProf =
                     RequestAvailableDynamicRangeProfilesMap::
                             ANDROID_REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES_MAP_STANDARD,
@@ -227,7 +236,7 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
             const std::unordered_set<std::string>& physicalIds,
             std::shared_ptr<ICameraDeviceSession>* session /*out*/, Stream* previewStream /*out*/,
             std::vector<HalStream>* halStreams /*out*/, bool* supportsPartialResults /*out*/,
-            int32_t* partialResultCount /*out*/, bool* useHalBufManager /*out*/,
+            int32_t* partialResultCount /*out*/, std::set<int32_t>* halBufManagedStreamIds /*out*/,
             std::shared_ptr<DeviceCb>* cb /*out*/, int32_t streamConfigCounter = 0,
             bool allowUnsupport = false);
 
@@ -281,6 +290,9 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
     static void verifyStreamCombination(const std::shared_ptr<ICameraDevice>& device,
                                         const StreamConfiguration& config, bool expectedStatus);
 
+    static void verifySessionCharacteristics(const CameraMetadata& session_chars,
+                                             const CameraMetadata& camera_chars);
+
     static void verifyLogicalCameraResult(const camera_metadata_t* staticMetadata,
                                           const std::vector<uint8_t>& resultMetadata);
 
@@ -333,6 +345,8 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
     static bool isTorchStrengthControlSupported(const camera_metadata_t* staticMeta);
 
     static Status isOfflineSessionSupported(const camera_metadata_t* staticMeta);
+
+    static bool isReadoutTimestampSupported(const camera_metadata_t* staticMeta);
 
     static Status getPhysicalCameraIds(const camera_metadata_t* staticMeta,
                                        std::unordered_set<std::string>* physicalIds /*out*/);
@@ -444,8 +458,6 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
     struct InFlightRequest {
         // Set by notify() SHUTTER call.
         nsecs_t shutterTimestamp;
-
-        bool shutterReadoutTimestampValid;
         nsecs_t shutterReadoutTimestamp;
 
         bool errorCodeValid;
@@ -511,7 +523,6 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
 
         InFlightRequest()
             : shutterTimestamp(0),
-              shutterReadoutTimestampValid(false),
               shutterReadoutTimestamp(0),
               errorCodeValid(false),
               errorCode(ErrorCode::ERROR_BUFFER),
@@ -529,7 +540,6 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
         InFlightRequest(ssize_t numBuffers, bool hasInput, bool partialResults,
                         int32_t partialCount, std::shared_ptr<ResultMetadataQueue> queue = nullptr)
             : shutterTimestamp(0),
-              shutterReadoutTimestampValid(false),
               shutterReadoutTimestamp(0),
               errorCodeValid(false),
               errorCode(ErrorCode::ERROR_BUFFER),
@@ -549,7 +559,6 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
                         const std::unordered_set<std::string>& extraPhysicalResult,
                         std::shared_ptr<ResultMetadataQueue> queue = nullptr)
             : shutterTimestamp(0),
-              shutterReadoutTimestampValid(false),
               shutterReadoutTimestamp(0),
               errorCodeValid(false),
               errorCode(ErrorCode::ERROR_BUFFER),
@@ -589,6 +598,9 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
     static void waitForReleaseFence(
             std::vector<InFlightRequest::StreamBufferAndTimestamp>& resultOutputBuffers);
 
+    static void validateDefaultRequestMetadata(RequestTemplate reqTemplate,
+                                               const CameraMetadata& rawMetadata);
+
     // Map from frame number to the in-flight request state
     typedef std::unordered_map<uint32_t, std::shared_ptr<InFlightRequest>> InFlightMap;
 
@@ -615,6 +627,8 @@ class CameraAidlTest : public ::testing::TestWithParam<std::string> {
     std::string mProviderType;
 
     HandleImporter mHandleImporter;
+
+    bool mSupportReadoutTimestamp;
 
     friend class DeviceCb;
     friend class SimpleDeviceCb;

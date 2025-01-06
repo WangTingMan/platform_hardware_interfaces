@@ -121,6 +121,9 @@ cc_test {
     name: "VtsHalEnvironmentalReverbTargetTest",
     defaults: ["VtsHalAudioEffectTargetTestDefaults"],
     srcs: ["VtsHalEnvironmentalReverbTargetTest.cpp"],
+    shared_libs: [
+        "libaudioutils",
+    ],
 }
 
 cc_test {
@@ -133,6 +136,9 @@ cc_test {
     name: "VtsHalHapticGeneratorTargetTest",
     defaults: ["VtsHalAudioEffectTargetTestDefaults"],
     srcs: ["VtsHalHapticGeneratorTargetTest.cpp"],
+    shared_libs: [
+        "libaudioutils",
+    ],
 }
 
 cc_test {
@@ -145,6 +151,9 @@ cc_test {
     name: "VtsHalPresetReverbTargetTest",
     defaults: ["VtsHalAudioEffectTargetTestDefaults"],
     srcs: ["VtsHalPresetReverbTargetTest.cpp"],
+    shared_libs: [
+        "libaudioutils",
+    ],
 }
 
 cc_test {

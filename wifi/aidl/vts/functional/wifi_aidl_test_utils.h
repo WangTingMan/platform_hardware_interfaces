@@ -21,6 +21,7 @@
 #include <aidl/android/hardware/wifi/IWifi.h>
 #include <aidl/android/hardware/wifi/IWifiChip.h>
 #include <android/binder_manager.h>
+#include <android/persistable_bundle_aidl.h>
 #include <wifi_system/interface_tool.h>
 
 using aidl::android::hardware::wifi::IfaceConcurrencyType;
@@ -30,6 +31,8 @@ using aidl::android::hardware::wifi::IWifiChip;
 using aidl::android::hardware::wifi::IWifiNanIface;
 using aidl::android::hardware::wifi::IWifiStaIface;
 using aidl::android::hardware::wifi::WifiStatusCode;
+using aidl::android::hardware::wifi::common::OuiKeyedData;
+using aidl::android::os::PersistableBundle;
 
 // Helper functions to obtain references to the various AIDL interface objects.
 std::shared_ptr<IWifi> getWifi(const char* instance_name);
@@ -37,6 +40,7 @@ std::shared_ptr<IWifiChip> getWifiChip(const char* instance_name);
 std::shared_ptr<IWifiStaIface> getWifiStaIface(const char* instance_name);
 std::shared_ptr<IWifiNanIface> getWifiNanIface(const char* instance_name);
 std::shared_ptr<IWifiApIface> getWifiApIface(const char* instance_name);
+std::shared_ptr<IWifiApIface> getWifiApIface(std::shared_ptr<IWifiChip> wifi_chip);
 std::shared_ptr<IWifiApIface> getBridgedWifiApIface(const char* instance_name);
 std::shared_ptr<IWifiApIface> getBridgedWifiApIface(std::shared_ptr<IWifiChip> wifi_chip);
 // Configure the chip in a mode to support the creation of the provided iface type.
@@ -50,3 +54,6 @@ void stopWifiService(const char* instance_name);
 int32_t getChipFeatureSet(const std::shared_ptr<IWifiChip>& wifi_chip);
 bool checkStatusCode(ndk::ScopedAStatus* status, WifiStatusCode expected_code);
 bool isAidlServiceAvailable(const char* instance_name);
+// Generate test vendor data.
+std::vector<OuiKeyedData> generateOuiKeyedDataList(int size);
+std::optional<std::vector<std::optional<OuiKeyedData>>> generateOuiKeyedDataListOptional(int size);

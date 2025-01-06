@@ -25,9 +25,6 @@
       "name": "VehiclePropertyAnnotationJavaTest"
     },
     {
-      "name": "FakeVehicleHardwareTest"
-    },
-    {
       "name": "FakeVehicleHalValueGeneratorsTest"
     },
     {
@@ -45,6 +42,12 @@
       "name": "VtsHalAutomotiveVehicle_TargetTest"
     },
     {
+      "name": "FakeVehicleHardwareTest"
+    },
+    {
+      "name": "GRPCVehicleHardwareUnitTest"
+    },
+    {
       "name": "CarServiceUnitTest",
       "options" : [
         {
@@ -52,6 +55,11 @@
         }
       ]
     },
+    {
+      "name": "VehicleHalProtoMessageConverterTest"
+    }
+  ],
+  "postsubmit": [
     {
       "name": "VehicleHalProtoMessageConverterTest"
     }

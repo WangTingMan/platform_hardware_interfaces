@@ -20,6 +20,7 @@
 #include <aidlcommonsupport/NativeHandle.h>
 #include <grallocusage/GrallocUsageConversion.h>
 #include <cinttypes>
+#include <nativebase/nativebase.h>
 
 using ::aidl::android::hardware::camera::device::BufferStatus;
 using ::aidl::android::hardware::camera::device::ErrorMsg;
@@ -31,10 +32,11 @@ const int64_t kBufferReturnTimeoutSec = 1;
 
 DeviceCb::DeviceCb(CameraAidlTest* parent, camera_metadata_t* staticMeta) : mParent(parent) {
     mStaticMetadata = staticMeta;
+    parent->mSupportReadoutTimestamp = CameraAidlTest::isReadoutTimestampSupported(staticMeta);
 }
 
 ScopedAStatus DeviceCb::notify(const std::vector<NotifyMsg>& msgs) {
-    std::vector<std::pair<bool, nsecs_t>> readoutTimestamps;
+    std::vector<nsecs_t> readoutTimestamps;
 
     size_t count = msgs.size();
     readoutTimestamps.resize(count);
@@ -43,11 +45,11 @@ ScopedAStatus DeviceCb::notify(const std::vector<NotifyMsg>& msgs) {
         const NotifyMsg& msg = msgs[i];
         switch (msg.getTag()) {
             case NotifyMsg::Tag::error:
-                readoutTimestamps[i] = {false, 0};
+                readoutTimestamps[i] = 0;
                 break;
             case NotifyMsg::Tag::shutter:
                 const auto& shutter = msg.get<NotifyMsg::Tag::shutter>();
-                readoutTimestamps[i] = {true, shutter.readoutTimestamp};
+                readoutTimestamps[i] = shutter.readoutTimestamp;
                 break;
         }
     }
@@ -143,8 +145,8 @@ ScopedAStatus DeviceCb::requestStreamBuffers(const std::vector<BufferRequest>& b
 
             CameraAidlTest::allocateGraphicBuffer(
                     w, h,
-                    android_convertGralloc1To0Usage(static_cast<uint64_t>(halStream.producerUsage),
-                                                    static_cast<uint64_t>(halStream.consumerUsage)),
+                    ANDROID_NATIVE_UNSIGNED_CAST(android_convertGralloc1To0Usage(static_cast<uint64_t>(halStream.producerUsage),
+                                                    static_cast<uint64_t>(halStream.consumerUsage))),
                     halStream.overrideFormat, &handle);
 
             StreamBuffer streamBuffer = StreamBuffer();
@@ -445,9 +447,8 @@ bool DeviceCb::processCaptureResultLocked(
     return notify;
 }
 
-ScopedAStatus DeviceCb::notifyHelper(
-        const std::vector<NotifyMsg>& msgs,
-        const std::vector<std::pair<bool, nsecs_t>>& readoutTimestamps) {
+ScopedAStatus DeviceCb::notifyHelper(const std::vector<NotifyMsg>& msgs,
+                                     const std::vector<nsecs_t>& readoutTimestamps) {
     std::lock_guard<std::mutex> l(mParent->mLock);
 
     for (size_t i = 0; i < msgs.size(); i++) {
@@ -513,8 +514,7 @@ ScopedAStatus DeviceCb::notifyHelper(
                 }
                 auto& r = itr->second;
                 r->shutterTimestamp = msg.get<NotifyMsg::Tag::shutter>().timestamp;
-                r->shutterReadoutTimestampValid = readoutTimestamps[i].first;
-                r->shutterReadoutTimestamp = readoutTimestamps[i].second;
+                r->shutterReadoutTimestamp = readoutTimestamps[i];
                 break;
         }
     }

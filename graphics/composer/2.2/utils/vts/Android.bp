@@ -38,6 +38,8 @@ cc_library_static {
     ],
     shared_libs: [
         "libui",
+        "server_configurable_flags",
+        "libtracing_perfetto",
     ],
     static_libs: [
         "android.hardware.graphics.composer@2.1-vts",
@@ -48,6 +50,7 @@ cc_library_static {
         "libnativewindow",
         "librenderengine",
         "libshaders",
+        "libsurfaceflinger_common",
         "libtonemap",
     ],
     export_static_lib_headers: [
