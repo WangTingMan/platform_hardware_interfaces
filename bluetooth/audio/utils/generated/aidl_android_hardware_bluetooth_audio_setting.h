@@ -17,6 +17,10 @@
 
 #include "aidl_android_hardware_bluetooth_audio_setting_enums.h"
 
+#include <aidl_session/LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h>
+
+#define AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS
+
 namespace aidl {
     namespace android {
         namespace hardware {
@@ -32,11 +36,11 @@ namespace aidl {
                         class Configuration;
                         class CodecConfiguration;
                         class StrategyConfiguration;
-                        std::optional<LeAudioOffloadSetting> readLeAudioOffloadSetting(const char* configFile);
+                        AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS std::optional<LeAudioOffloadSetting> readLeAudioOffloadSetting(const char* configFile);
 
-                        std::optional<LeAudioOffloadSetting> parseLeAudioOffloadSetting(const char* xml);
+                        AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS std::optional<LeAudioOffloadSetting> parseLeAudioOffloadSetting(const char* xml);
 
-                        class LeAudioOffloadSetting {
+                        class AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS LeAudioOffloadSetting {
                             private:
                             const std::vector<ScenarioList> scenarioList_;
                             const std::vector<ConfigurationList> configurationList_;
@@ -59,7 +63,7 @@ namespace aidl {
                             static LeAudioOffloadSetting read(xmlNode *root);
                         };
 
-                        class ScenarioList {
+                        class AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS ScenarioList {
                             private:
                             const std::vector<Scenario> scenario_;
                             public:
@@ -70,7 +74,7 @@ namespace aidl {
                             static ScenarioList read(xmlNode *root);
                         };
 
-                        class ConfigurationList {
+                        class AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS ConfigurationList {
                             private:
                             const std::vector<Configuration> configuration_;
                             public:
@@ -81,7 +85,7 @@ namespace aidl {
                             static ConfigurationList read(xmlNode *root);
                         };
 
-                        class CodecConfigurationList {
+                        class AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS CodecConfigurationList {
                             private:
                             const std::vector<CodecConfiguration> codecConfiguration_;
                             public:
@@ -92,7 +96,7 @@ namespace aidl {
                             static CodecConfigurationList read(xmlNode *root);
                         };
 
-                        class StrategyConfigurationList {
+                        class AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS StrategyConfigurationList {
                             private:
                             const std::vector<StrategyConfiguration> strategyConfiguration_;
                             public:
@@ -103,7 +107,7 @@ namespace aidl {
                             static StrategyConfigurationList read(xmlNode *root);
                         };
 
-                        class Scenario {
+                        class AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS Scenario {
                             private:
                             const std::optional<std::string> encode_;
                             const std::optional<std::string> decode_;
@@ -119,7 +123,7 @@ namespace aidl {
                             static Scenario read(xmlNode *root);
                         };
 
-                        class Configuration {
+                        class AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS Configuration {
                             private:
                             const std::optional<std::string> name_;
                             const std::optional<std::string> codecConfiguration_;
@@ -135,7 +139,7 @@ namespace aidl {
                             static Configuration read(xmlNode *root);
                         };
 
-                        class CodecConfiguration {
+                        class AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS CodecConfiguration {
                             private:
                             const std::optional<std::string> name_;
                             const std::optional<CodecType> codec_;
@@ -163,7 +167,7 @@ namespace aidl {
                             static CodecConfiguration read(xmlNode *root);
                         };
 
-                        class StrategyConfiguration {
+                        class AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS StrategyConfiguration {
                             private:
                             const std::optional<std::string> name_;
                             const std::optional<AudioLocation> audioLocation_;
