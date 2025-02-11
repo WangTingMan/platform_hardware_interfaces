@@ -17,6 +17,7 @@
 #pragma once
 
 #include <android/binder_manager.h>
+#include <cutils/properties.h>
 
 #include "DemuxTests.h"
 #include "DescramblerTests.h"
@@ -29,6 +30,14 @@ using android::sp;
 namespace {
 
 bool initConfiguration() {
+    std::array<char, PROPERTY_VALUE_MAX> variant;
+    property_get("ro.vendor.vts_tuner_configuration_variant", variant.data(), "");
+    string variantString = variant.data();
+    string configFilePath = "/vendor/etc/tuner_vts_config_aidl_V1";
+    if (variantString.length() != 0) {
+        configFilePath = configFilePath + "." + variantString;
+    }
+    configFilePath = configFilePath + ".xml";
     TunerTestingConfigAidlReader1_0::setConfigFilePath(configFilePath);
     if (!TunerTestingConfigAidlReader1_0::checkConfigFileExists()) {
         return false;
@@ -78,6 +87,28 @@ void clearIds() {
     playbackDvrIds.clear();
     recordFilterIds.clear();
     sectionFilterIds.clear();
+}
+
+bool isPassthroughFilter(FilterConfig filterConfig) {
+    auto type = filterConfig.type;
+    if (type.mainType == DemuxFilterMainType::TS) {
+        auto subType = type.subType.get<DemuxFilterSubType::Tag::tsFilterType>();
+        if (subType == DemuxTsFilterType::AUDIO || subType == DemuxTsFilterType::VIDEO) {
+            auto tsFilterSettings = filterConfig.settings.get<DemuxFilterSettings::Tag::ts>();
+            auto avSettings = tsFilterSettings.filterSettings
+                    .get<DemuxTsFilterSettingsFilterSettings::Tag::av>();
+            return avSettings.isPassthrough;
+        }
+    } else if (filterConfig.type.mainType != DemuxFilterMainType::MMTP) {
+        auto subType = type.subType.get<DemuxFilterSubType::Tag::mmtpFilterType>();
+        if (subType == DemuxMmtpFilterType::AUDIO || subType == DemuxMmtpFilterType::VIDEO) {
+            auto mmtpFilterSettings = filterConfig.settings.get<DemuxFilterSettings::Tag::mmtp>();
+            auto avSettings = mmtpFilterSettings.filterSettings
+                    .get<DemuxMmtpFilterSettingsFilterSettings::Tag::av>();
+            return avSettings.isPassthrough;
+        }
+    }
+    return false;
 }
 
 enum class Dataflow_Context { LNBRECORD, RECORD, DESCRAMBLING, LNBDESCRAMBLING };

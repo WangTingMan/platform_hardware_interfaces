@@ -45,6 +45,9 @@ interface IKeyMintDevice {
   void deleteAllKeys();
   void destroyAttestationIds();
   android.hardware.security.keymint.BeginResult begin(in android.hardware.security.keymint.KeyPurpose purpose, in byte[] keyBlob, in android.hardware.security.keymint.KeyParameter[] params, in @nullable android.hardware.security.keymint.HardwareAuthToken authToken);
+  /**
+   * @deprecated Method has never been used due to design limitations
+   */
   void deviceLocked(in boolean passwordOnly, in @nullable android.hardware.security.secureclock.TimeStampToken timestampToken);
   void earlyBootEnded();
   byte[] convertStorageKeyToEphemeral(in byte[] storageKeyBlob);
@@ -52,5 +55,6 @@ interface IKeyMintDevice {
   byte[16] getRootOfTrustChallenge();
   byte[] getRootOfTrust(in byte[16] challenge);
   void sendRootOfTrust(in byte[] rootOfTrust);
+  void setAdditionalAttestationInfo(in android.hardware.security.keymint.KeyParameter[] info);
   const int AUTH_TOKEN_MAC_LENGTH = 32;
 }

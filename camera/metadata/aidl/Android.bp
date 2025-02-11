@@ -10,9 +10,10 @@ package {
 
 aidl_interface {
     name: "android.hardware.camera.metadata",
+    host_supported: true,
     vendor_available: true,
     srcs: ["android/hardware/camera/metadata/*.aidl"],
-    frozen: false,
+    frozen: true,
     stability: "vintf",
     backend: {
         cpp: {
@@ -32,6 +33,10 @@ aidl_interface {
         },
         {
             version: "2",
+            imports: [],
+        },
+        {
+            version: "3",
             imports: [],
         },
 

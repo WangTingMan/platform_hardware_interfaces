@@ -148,8 +148,10 @@ class Module : public BnModule {
     struct VendorDebug {
         static const std::string kForceTransientBurstName;
         static const std::string kForceSynchronousDrainName;
+        static const std::string kForceDrainToDrainingName;
         bool forceTransientBurst = false;
         bool forceSynchronousDrain = false;
+        bool forceDrainToDraining = false;
     };
     // ids of device ports created at runtime via 'connectExternalDevice'.
     // Also stores a list of ids of mix ports with dynamic profiles that were populated from
@@ -205,15 +207,21 @@ class Module : public BnModule {
     virtual std::unique_ptr<Configuration> initializeConfig();
     virtual int32_t getNominalLatencyMs(
             const ::aidl::android::media::audio::common::AudioPortConfig& portConfig);
+    virtual ndk::ScopedAStatus calculateBufferSizeFrames(
+            const ::aidl::android::media::audio::common::AudioFormatDescription &format,
+            int32_t latencyMs, int32_t sampleRateHz, int32_t *bufferSizeFrames);
+    virtual ndk::ScopedAStatus createMmapBuffer(
+            const ::aidl::android::hardware::audio::core::StreamContext& context,
+            ::aidl::android::hardware::audio::core::StreamDescriptor* desc);
 
     // Utility and helper functions accessible to subclasses.
-    static int32_t calculateBufferSizeFrames(int32_t latencyMs, int32_t sampleRateHz) {
+    static int32_t calculateBufferSizeFramesForPcm(int32_t latencyMs, int32_t sampleRateHz) {
         const int32_t rawSizeFrames =
                 aidl::android::hardware::audio::common::frameCountFromDurationMs(latencyMs,
                                                                                  sampleRateHz);
         // Round up to nearest 16 frames since in the framework this is the size of a mixer burst.
         const int32_t multipleOf16 = (rawSizeFrames + 15) & ~15;
-        if (multipleOf16 <= 512) return multipleOf16;
+        if (sampleRateHz < 44100 || multipleOf16 <= 512) return multipleOf16;
         // Larger buffers should use powers of 2.
         int32_t powerOf2 = 1;
         while (powerOf2 < multipleOf16) powerOf2 <<= 1;
@@ -238,6 +246,8 @@ class Module : public BnModule {
     std::vector<AudioRoute*> getAudioRoutesForAudioPortImpl(int32_t portId);
     Configuration& getConfig();
     const ConnectedDevicePorts& getConnectedDevicePorts() const { return mConnectedDevicePorts; }
+    std::vector<::aidl::android::media::audio::common::AudioDevice>
+    getDevicesFromDevicePortConfigIds(const std::set<int32_t>& devicePortConfigIds);
     bool getMasterMute() const { return mMasterMute; }
     bool getMasterVolume() const { return mMasterVolume; }
     bool getMicMute() const { return mMicMute; }
@@ -260,6 +270,9 @@ class Module : public BnModule {
             ::aidl::android::media::audio::common::AudioPortConfig* out_suggested, bool* applied);
     ndk::ScopedAStatus updateStreamsConnectedState(const AudioPatch& oldPatch,
                                                    const AudioPatch& newPatch);
+    bool setAudioPortConfigGain(
+            const ::aidl::android::media::audio::common::AudioPort& port,
+            const ::aidl::android::media::audio::common::AudioGainConfig& gainRequested);
 };
 
 std::ostream& operator<<(std::ostream& os, Module::Type t);

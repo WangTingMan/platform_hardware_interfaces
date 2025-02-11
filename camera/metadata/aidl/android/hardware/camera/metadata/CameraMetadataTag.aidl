@@ -580,25 +580,25 @@ enum CameraMetadataTag {
     /**
      * android.flash.singleStrengthMaxLevel [static, int32, public]
      *
-     * <p>Maximum flash brightness level for manual flash control in SINGLE mode.</p>
+     * <p>Maximum flash brightness level for manual flash control in <code>SINGLE</code> mode.</p>
      */
     ANDROID_FLASH_SINGLE_STRENGTH_MAX_LEVEL,
     /**
      * android.flash.singleStrengthDefaultLevel [static, int32, public]
      *
-     * <p>Default flash brightness level for manual flash control in SINGLE mode.</p>
+     * <p>Default flash brightness level for manual flash control in <code>SINGLE</code> mode.</p>
      */
     ANDROID_FLASH_SINGLE_STRENGTH_DEFAULT_LEVEL,
     /**
      * android.flash.torchStrengthMaxLevel [static, int32, public]
      *
-     * <p>Maximum flash brightness level for manual flash control in TORCH mode</p>
+     * <p>Maximum flash brightness level for manual flash control in <code>TORCH</code> mode</p>
      */
     ANDROID_FLASH_TORCH_STRENGTH_MAX_LEVEL,
     /**
      * android.flash.torchStrengthDefaultLevel [static, int32, public]
      *
-     * <p>Default flash brightness level for manual flash control in TORCH mode</p>
+     * <p>Default flash brightness level for manual flash control in <code>TORCH</code> mode</p>
      */
     ANDROID_FLASH_TORCH_STRENGTH_DEFAULT_LEVEL,
     /**
@@ -1590,6 +1590,13 @@ enum CameraMetadataTag {
      * @see ANDROID_SENSOR_INFO_BINNING_FACTOR
      */
     ANDROID_SENSOR_RAW_BINNING_FACTOR_USED,
+    /**
+     * android.sensor.readoutTimestamp [static, enum, java_public]
+     *
+     * <p>Whether or not the camera device supports readout timestamp and
+     * {@code onReadoutStarted} callback.</p>
+     */
+    ANDROID_SENSOR_READOUT_TIMESTAMP,
     /**
      * android.sensor.info.activeArraySize [static, int32[], public]
      *

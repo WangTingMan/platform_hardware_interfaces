@@ -73,20 +73,22 @@ TEST_P(DeviceUniqueAttestationTest, RsaNonStrongBoxUnimplemented) {
     vector<KeyCharacteristics> key_characteristics;
 
     // Check RSA implementation
-    auto result = GenerateKey(AuthorizationSetBuilder()
-                                      .Authorization(TAG_NO_AUTH_REQUIRED)
-                                      .RsaSigningKey(2048, 65537)
-                                      .Digest(Digest::SHA_2_256)
-                                      .Padding(PaddingMode::RSA_PKCS1_1_5_SIGN)
-                                      .Authorization(TAG_INCLUDE_UNIQUE_ID)
-                                      .Authorization(TAG_CREATION_DATETIME, 1619621648000)
-                                      .SetDefaultValidity()
-                                      .AttestationChallenge("challenge")
-                                      .AttestationApplicationId("foo")
-                                      .Authorization(TAG_DEVICE_UNIQUE_ATTESTATION),
-                              &key_blob, &key_characteristics);
+    auto result =
+            GenerateKey(AuthorizationSetBuilder()
+                                .Authorization(TAG_NO_AUTH_REQUIRED)
+                                .RsaSigningKey(2048, 65537)
+                                .Digest(Digest::SHA_2_256)
+                                .Padding(PaddingMode::RSA_PKCS1_1_5_SIGN)
+                                .Authorization(TAG_INCLUDE_UNIQUE_ID)
+                                .Authorization(TAG_CREATION_DATETIME, 1619621648000)
+                                .SetDefaultValidity()
+                                .AttestationChallenge("challenge")
+                                .AttestationApplicationId("foo")
+                                .Authorization(TAG_DEVICE_UNIQUE_ATTESTATION),
+                        /*attest_key=*/std::nullopt, &key_blob, &key_characteristics, &cert_chain_);
 
-    ASSERT_TRUE(result == ErrorCode::INVALID_ARGUMENT || result == ErrorCode::UNSUPPORTED_TAG);
+    ASSERT_TRUE(result == ErrorCode::INVALID_ARGUMENT || result == ErrorCode::UNSUPPORTED_TAG)
+            << "Result: " << result;
 }
 
 /*
@@ -104,19 +106,21 @@ TEST_P(DeviceUniqueAttestationTest, EcdsaNonStrongBoxUnimplemented) {
     vector<KeyCharacteristics> key_characteristics;
 
     // Check Ecdsa implementation
-    auto result = GenerateKey(AuthorizationSetBuilder()
-                                      .Authorization(TAG_NO_AUTH_REQUIRED)
-                                      .EcdsaSigningKey(EcCurve::P_256)
-                                      .Digest(Digest::SHA_2_256)
-                                      .Authorization(TAG_INCLUDE_UNIQUE_ID)
-                                      .Authorization(TAG_CREATION_DATETIME, 1619621648000)
-                                      .SetDefaultValidity()
-                                      .AttestationChallenge("challenge")
-                                      .AttestationApplicationId("foo")
-                                      .Authorization(TAG_DEVICE_UNIQUE_ATTESTATION),
-                              &key_blob, &key_characteristics);
+    auto result =
+            GenerateKey(AuthorizationSetBuilder()
+                                .Authorization(TAG_NO_AUTH_REQUIRED)
+                                .EcdsaSigningKey(EcCurve::P_256)
+                                .Digest(Digest::SHA_2_256)
+                                .Authorization(TAG_INCLUDE_UNIQUE_ID)
+                                .Authorization(TAG_CREATION_DATETIME, 1619621648000)
+                                .SetDefaultValidity()
+                                .AttestationChallenge("challenge")
+                                .AttestationApplicationId("foo")
+                                .Authorization(TAG_DEVICE_UNIQUE_ATTESTATION),
+                        /*attest_key=*/std::nullopt, &key_blob, &key_characteristics, &cert_chain_);
 
-    ASSERT_TRUE(result == ErrorCode::INVALID_ARGUMENT || result == ErrorCode::UNSUPPORTED_TAG);
+    ASSERT_TRUE(result == ErrorCode::INVALID_ARGUMENT || result == ErrorCode::UNSUPPORTED_TAG)
+            << "Result: " << result;
 }
 
 /*
@@ -249,39 +253,14 @@ TEST_P(DeviceUniqueAttestationTest, EcdsaDeviceUniqueAttestationID) {
 
     // Collection of valid attestation ID tags.
     auto attestation_id_tags = AuthorizationSetBuilder();
-    // Use ro.product.brand_for_attestation property for attestation if it is present else fallback
-    // to ro.product.brand
-    std::string prop_value =
-            ::android::base::GetProperty("ro.product.brand_for_attestation", /* default= */ "");
-    if (!prop_value.empty()) {
-        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_BRAND,
-                          "ro.product.brand_for_attestation");
-    } else {
-        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_BRAND, "ro.product.brand");
-    }
-    add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_DEVICE, "ro.product.device");
-    // Use ro.product.name_for_attestation property for attestation if it is present else fallback
-    // to ro.product.name
-    prop_value = ::android::base::GetProperty("ro.product.name_for_attestation", /* default= */ "");
-    if (!prop_value.empty()) {
-        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_PRODUCT,
-                          "ro.product.name_for_attestation");
-    } else {
-        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_PRODUCT, "ro.product.name");
-    }
+
+    add_attestation_id(&attestation_id_tags, TAG_ATTESTATION_ID_BRAND, "brand");
+    add_attestation_id(&attestation_id_tags, TAG_ATTESTATION_ID_DEVICE, "device");
+    add_attestation_id(&attestation_id_tags, TAG_ATTESTATION_ID_PRODUCT, "name");
     add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_SERIAL, "ro.serialno");
-    add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_MANUFACTURER,
-                      "ro.product.manufacturer");
-    // Use ro.product.model_for_attestation property for attestation if it is present else fallback
-    // to ro.product.model
-    prop_value =
-            ::android::base::GetProperty("ro.product.model_for_attestation", /* default= */ "");
-    if (!prop_value.empty()) {
-        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_MODEL,
-                          "ro.product.model_for_attestation");
-    } else {
-        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_MODEL, "ro.product.model");
-    }
+    add_attestation_id(&attestation_id_tags, TAG_ATTESTATION_ID_MANUFACTURER, "manufacturer");
+    add_attestation_id(&attestation_id_tags, TAG_ATTESTATION_ID_MODEL, "model");
+
     vector<uint8_t> key_blob;
     vector<KeyCharacteristics> key_characteristics;
 

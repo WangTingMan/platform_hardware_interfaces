@@ -15,6 +15,7 @@
 //
 
 package {
+    default_team: "trendy_team_interactive_tv",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
     // all of the 'license_kinds' from "hardware_interfaces_license"
@@ -37,6 +38,7 @@ cc_test {
         "FrontendTests.cpp",
         "LnbTests.cpp",
         "VtsHalTvTunerTargetTest.cpp",
+        "utils/IpStreamer.cpp",
     ],
     generated_headers: [
         "tuner_testing_dynamic_configuration_V1_0_enums",
@@ -54,7 +56,7 @@ cc_test {
         "android.hardware.cas-V1-ndk",
         "android.hardware.common-V2-ndk",
         "android.hardware.common.fmq-V1-ndk",
-        "android.hardware.tv.tuner-V2-ndk",
+        "android.hardware.tv.tuner-V3-ndk",
         "libaidlcommonsupport",
         "libfmq",
         "libcutils",

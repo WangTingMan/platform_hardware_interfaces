@@ -538,6 +538,19 @@ Status ExternalCameraDeviceSession::processOneCaptureRequest(const CaptureReques
         return Status::INTERNAL_ERROR;
     }
 
+    if (request.outputBuffers.empty()) {
+        ALOGE("%s: No output buffers provided.", __FUNCTION__);
+        return Status::ILLEGAL_ARGUMENT;
+    }
+
+    for (auto& outputBuf : request.outputBuffers) {
+        if (outputBuf.streamId == -1 || mStreamMap.find(outputBuf.streamId) == mStreamMap.end()) {
+            ALOGE("%s: Invalid streamId in CaptureRequest.outputBuffers: %d", __FUNCTION__,
+                  outputBuf.streamId);
+            return Status::ILLEGAL_ARGUMENT;
+        }
+    }
+
     const camera_metadata_t* rawSettings = nullptr;
     bool converted;
     CameraMetadata settingsFmq;  // settings from FMQ
@@ -572,8 +585,6 @@ Status ExternalCameraDeviceSession::processOneCaptureRequest(const CaptureReques
         return Status::ILLEGAL_ARGUMENT;
     }
 
-    std::vector<buffer_handle_t*> allBufPtrs;
-    std::vector<int> allFences;
     size_t numOutputBufs = request.outputBuffers.size();
 
     if (numOutputBufs == 0) {
@@ -629,11 +640,6 @@ Status ExternalCameraDeviceSession::processOneCaptureRequest(const CaptureReques
         }
     }
 
-    status = importRequestLocked(request, allBufPtrs, allFences);
-    if (status != Status::OK) {
-        return status;
-    }
-
     nsecs_t shutterTs = 0;
     std::unique_ptr<V4L2Frame> frameIn = dequeueV4l2FrameLocked(&shutterTs);
     if (frameIn == nullptr) {
@@ -656,8 +662,8 @@ Status ExternalCameraDeviceSession::processOneCaptureRequest(const CaptureReques
         halBuf.height = stream.height;
         halBuf.format = stream.format;
         halBuf.usage = stream.usage;
-        halBuf.bufPtr = allBufPtrs[i];
-        halBuf.acquireFence = allFences[i];
+        halBuf.bufPtr = nullptr;  // threadloop will request buffer from cameraservice
+        halBuf.acquireFence = 0;  // threadloop will request fence from cameraservice
         halBuf.fenceTimeout = false;
     }
     {
@@ -789,8 +795,10 @@ Status ExternalCameraDeviceSession::switchToOffline(
                 outputBuffer.bufferId = buffer.bufferId;
                 outputBuffer.status = BufferStatus::ERROR;
                 if (buffer.acquireFence >= 0) {
-                    outputBuffer.releaseFence.fds.resize(1);
-                    outputBuffer.releaseFence.fds.at(0).set(buffer.acquireFence);
+                    native_handle_t* handle = native_handle_create(/*numFds*/ 1, /*numInts*/ 0);
+                    handle->data[0] = buffer.acquireFence;
+                    outputBuffer.releaseFence = android::dupToAidl(handle);
+                    native_handle_delete(handle);
                 }
             } else {
                 offlineBuffers.push_back(buffer);
@@ -1128,6 +1136,11 @@ int ExternalCameraDeviceSession::configureV4l2StreamLocked(const SupportedV4L2Fo
 
     uint32_t v4lBufferCount = (fps >= kDefaultFps) ? mCfg.numVideoBuffers : mCfg.numStillBuffers;
 
+    // Double the max lag in theory.
+    mMaxLagNs = v4lBufferCount * 1000000000LL * 2 / fps;
+    ALOGI("%s: set mMaxLagNs to %" PRIu64 " ns, v4lBufferCount %u", __FUNCTION__, mMaxLagNs,
+          v4lBufferCount);
+
     // VIDIOC_REQBUFS: create buffers
     v4l2_requestbuffers req_buffers{};
     req_buffers.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -1224,40 +1237,67 @@ std::unique_ptr<V4L2Frame> ExternalCameraDeviceSession::dequeueV4l2FrameLocked(n
         }
     }
 
-    ATRACE_BEGIN("VIDIOC_DQBUF");
+    uint64_t lagNs = 0;
     v4l2_buffer buffer{};
-    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buffer.memory = V4L2_MEMORY_MMAP;
-    if (TEMP_FAILURE_RETRY(ioctl(mV4l2Fd.get(), VIDIOC_DQBUF, &buffer)) < 0) {
-        ALOGE("%s: DQBUF fails: %s", __FUNCTION__, strerror(errno));
-        return ret;
-    }
-    ATRACE_END();
+    do {
+        ATRACE_BEGIN("VIDIOC_DQBUF");
+        buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buffer.memory = V4L2_MEMORY_MMAP;
+        if (TEMP_FAILURE_RETRY(ioctl(mV4l2Fd.get(), VIDIOC_DQBUF, &buffer)) < 0) {
+            ALOGE("%s: DQBUF fails: %s", __FUNCTION__, strerror(errno));
+            return ret;
+        }
+        ATRACE_END();
 
-    if (buffer.index >= mV4L2BufferCount) {
-        ALOGE("%s: Invalid buffer id: %d", __FUNCTION__, buffer.index);
-        return ret;
-    }
+        if (buffer.index >= mV4L2BufferCount) {
+            ALOGE("%s: Invalid buffer id: %d", __FUNCTION__, buffer.index);
+            return ret;
+        }
 
-    if (buffer.flags & V4L2_BUF_FLAG_ERROR) {
-        ALOGE("%s: v4l2 buf error! buf flag 0x%x", __FUNCTION__, buffer.flags);
-        // TODO: try to dequeue again
-    }
+        if (buffer.flags & V4L2_BUF_FLAG_ERROR) {
+            ALOGE("%s: v4l2 buf error! buf flag 0x%x", __FUNCTION__, buffer.flags);
+            // TODO: try to dequeue again
+        }
 
-    if (buffer.bytesused > mMaxV4L2BufferSize) {
-        ALOGE("%s: v4l2 buffer bytes used: %u maximum %u", __FUNCTION__, buffer.bytesused,
-              mMaxV4L2BufferSize);
-        return ret;
-    }
+        if (buffer.bytesused > mMaxV4L2BufferSize) {
+            ALOGE("%s: v4l2 buffer bytes used: %u maximum %u", __FUNCTION__, buffer.bytesused,
+                  mMaxV4L2BufferSize);
+            return ret;
+        }
 
-    if (buffer.flags & V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC) {
-        // Ideally we should also check for V4L2_BUF_FLAG_TSTAMP_SRC_SOE, but
-        // even V4L2_BUF_FLAG_TSTAMP_SRC_EOF is better than capture a timestamp now
-        *shutterTs = static_cast<nsecs_t>(buffer.timestamp.tv_sec) * 1000000000LL +
-                     buffer.timestamp.tv_usec * 1000LL;
-    } else {
-        *shutterTs = systemTime(SYSTEM_TIME_MONOTONIC);
-    }
+        nsecs_t curTimeNs = systemTime(SYSTEM_TIME_MONOTONIC);
+
+        if (buffer.flags & V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC) {
+            // Ideally we should also check for V4L2_BUF_FLAG_TSTAMP_SRC_SOE, but
+            // even V4L2_BUF_FLAG_TSTAMP_SRC_EOF is better than capture a timestamp now
+            *shutterTs = static_cast<nsecs_t>(buffer.timestamp.tv_sec) * 1000000000LL +
+                         buffer.timestamp.tv_usec * 1000LL;
+        } else {
+            *shutterTs = curTimeNs;
+        }
+
+        // The tactic only takes effect on v4l2 buffers with flag V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC.
+        // Most USB cameras should have the feature.
+        if (curTimeNs < *shutterTs) {
+            lagNs = 0;
+            ALOGW("%s: should not happen, the monotonic clock has issue, shutterTs is in the "
+                  "future, curTimeNs %" PRId64 "  < "
+                  "shutterTs %" PRId64 "",
+                  __func__, curTimeNs, *shutterTs);
+        } else {
+            lagNs = curTimeNs - *shutterTs;
+        }
+
+        if (lagNs > mMaxLagNs) {
+            ALOGI("%s: drop too old buffer, index %d, lag %" PRIu64 " ns > max %" PRIu64 " ns", __FUNCTION__,
+                  buffer.index, lagNs, mMaxLagNs);
+            int retVal = ioctl(mV4l2Fd.get(), VIDIOC_QBUF, &buffer);
+            if (retVal) {
+                ALOGE("%s: unexpected VIDIOC_QBUF failed, retVal %d", __FUNCTION__, retVal);
+                return ret;
+            }
+        }
+    } while (lagNs > mMaxLagNs);
 
     {
         std::lock_guard<std::mutex> lk(mV4l2BufferLock);
@@ -1347,56 +1387,6 @@ bool ExternalCameraDeviceSession::isSupported(
     }
     ALOGI("%s: resolution %dx%d is not supported", __FUNCTION__, width, height);
     return false;
-}
-
-Status ExternalCameraDeviceSession::importRequestLocked(const CaptureRequest& request,
-                                                        std::vector<buffer_handle_t*>& allBufPtrs,
-                                                        std::vector<int>& allFences) {
-    return importRequestLockedImpl(request, allBufPtrs, allFences);
-}
-
-Status ExternalCameraDeviceSession::importRequestLockedImpl(
-        const CaptureRequest& request, std::vector<buffer_handle_t*>& allBufPtrs,
-        std::vector<int>& allFences) {
-    size_t numOutputBufs = request.outputBuffers.size();
-    size_t numBufs = numOutputBufs;
-    // Validate all I/O buffers
-    std::vector<buffer_handle_t> allBufs;
-    std::vector<uint64_t> allBufIds;
-    allBufs.resize(numBufs);
-    allBufIds.resize(numBufs);
-    allBufPtrs.resize(numBufs);
-    allFences.resize(numBufs);
-    std::vector<int32_t> streamIds(numBufs);
-
-    for (size_t i = 0; i < numOutputBufs; i++) {
-        allBufs[i] = ::android::makeFromAidl(request.outputBuffers[i].buffer);
-        allBufIds[i] = request.outputBuffers[i].bufferId;
-        allBufPtrs[i] = &allBufs[i];
-        streamIds[i] = request.outputBuffers[i].streamId;
-    }
-
-    {
-        Mutex::Autolock _l(mCbsLock);
-        for (size_t i = 0; i < numBufs; i++) {
-            Status st = importBufferLocked(streamIds[i], allBufIds[i], allBufs[i], &allBufPtrs[i]);
-            if (st != Status::OK) {
-                // Detailed error logs printed in importBuffer
-                return st;
-            }
-        }
-    }
-
-    // All buffers are imported. Now validate output buffer acquire fences
-    for (size_t i = 0; i < numOutputBufs; i++) {
-        if (!sHandleImporter.importFence(
-                    ::android::makeFromAidl(request.outputBuffers[i].acquireFence), allFences[i])) {
-            ALOGE("%s: output buffer %zu acquire fence is invalid", __FUNCTION__, i);
-            cleanupInflightFences(allFences, i);
-            return Status::INTERNAL_ERROR;
-        }
-    }
-    return Status::OK;
 }
 
 Status ExternalCameraDeviceSession::importBuffer(int32_t streamId, uint64_t bufId,
@@ -1768,8 +1758,10 @@ Status ExternalCameraDeviceSession::processCaptureRequestError(
         result.outputBuffers[i].bufferId = req->buffers[i].bufferId;
         result.outputBuffers[i].status = BufferStatus::ERROR;
         if (req->buffers[i].acquireFence >= 0) {
-            result.outputBuffers[i].releaseFence.fds.resize(1);
-            result.outputBuffers[i].releaseFence.fds.at(0).set(req->buffers[i].acquireFence);
+            // numFds = 0 for error
+            native_handle_t* handle = native_handle_create(/*numFds*/ 0, /*numInts*/ 0);
+            result.outputBuffers[i].releaseFence = android::dupToAidl(handle);
+            native_handle_delete(handle);
         }
     }
 
@@ -1813,16 +1805,20 @@ Status ExternalCameraDeviceSession::processCaptureResult(std::shared_ptr<HalRequ
         if (req->buffers[i].fenceTimeout) {
             result.outputBuffers[i].status = BufferStatus::ERROR;
             if (req->buffers[i].acquireFence >= 0) {
-                result.outputBuffers[i].releaseFence.fds.resize(1);
-                result.outputBuffers[i].releaseFence.fds.at(0).set(req->buffers[i].acquireFence);
+                native_handle_t* handle = native_handle_create(/*numFds*/ 1, /*numInts*/ 0);
+                handle->data[0] = req->buffers[i].acquireFence;
+                result.outputBuffers[i].releaseFence = android::dupToAidl(handle);
+                native_handle_delete(handle);
             }
             notifyError(req->frameNumber, req->buffers[i].streamId, ErrorCode::ERROR_BUFFER);
         } else {
             result.outputBuffers[i].status = BufferStatus::OK;
             // TODO: refactor
             if (req->buffers[i].acquireFence >= 0) {
-                result.outputBuffers[i].releaseFence.fds.resize(1);
-                result.outputBuffers[i].releaseFence.fds.at(0).set(req->buffers[i].acquireFence);
+                native_handle_t* handle = native_handle_create(/*numFds*/ 1, /*numInts*/ 0);
+                handle->data[0] = req->buffers[i].acquireFence;
+                result.outputBuffers[i].releaseFence = android::dupToAidl(handle);
+                native_handle_delete(handle);
             }
         }
     }
@@ -1997,7 +1993,14 @@ int ExternalCameraDeviceSession::BufferRequestThread::waitForBufferRequestDone(
         std::chrono::milliseconds timeout = std::chrono::milliseconds(kReqProcTimeoutMs);
         auto st = mRequestDoneCond.wait_for(lk, timeout);
         if (st == std::cv_status::timeout) {
+            mRequestingBuffer = false;
             ALOGE("%s: wait for buffer request finish timeout!", __FUNCTION__);
+            return -1;
+        }
+
+        if (mPendingReturnBufferReqs.empty()) {
+            mRequestingBuffer = false;
+            ALOGE("%s: cameraservice did not return any buffers!", __FUNCTION__);
             return -1;
         }
     }
@@ -2049,6 +2052,8 @@ bool ExternalCameraDeviceSession::BufferRequestThread::threadLoop() {
     if (!ret.isOk()) {
         ALOGE("%s: Transaction error: %d:%d", __FUNCTION__, ret.getExceptionCode(),
               ret.getServiceSpecificError());
+        mBufferReqs.clear();
+        mRequestDoneCond.notify_one();
         return false;
     }
 
@@ -2057,17 +2062,24 @@ bool ExternalCameraDeviceSession::BufferRequestThread::threadLoop() {
         if (bufRets.size() != mHalBufferReqs.size()) {
             ALOGE("%s: expect %zu buffer requests returned, only got %zu", __FUNCTION__,
                   mHalBufferReqs.size(), bufRets.size());
+            mBufferReqs.clear();
+            lk.unlock();
+            mRequestDoneCond.notify_one();
             return false;
         }
 
         auto parent = mParent.lock();
         if (parent == nullptr) {
             ALOGE("%s: session has been disconnected!", __FUNCTION__);
+            mBufferReqs.clear();
+            lk.unlock();
+            mRequestDoneCond.notify_one();
             return false;
         }
 
         std::vector<int> importedFences;
         importedFences.resize(bufRets.size());
+        bool hasError = false;
         for (size_t i = 0; i < bufRets.size(); i++) {
             int streamId = bufRets[i].streamId;
             switch (bufRets[i].val.getTag()) {
@@ -2078,7 +2090,8 @@ bool ExternalCameraDeviceSession::BufferRequestThread::threadLoop() {
                             bufRets[i].val.get<StreamBuffersVal::Tag::buffers>();
                     if (hBufs.size() != 1) {
                         ALOGE("%s: expect 1 buffer returned, got %zu!", __FUNCTION__, hBufs.size());
-                        return false;
+                        hasError = true;
+                        break;
                     }
                     const StreamBuffer& hBuf = hBufs[0];
 
@@ -2086,31 +2099,47 @@ bool ExternalCameraDeviceSession::BufferRequestThread::threadLoop() {
                     // TODO: create a batch import API so we don't need to lock/unlock mCbsLock
                     // repeatedly?
                     lk.unlock();
-                    Status s =
-                            parent->importBuffer(streamId, hBuf.bufferId, makeFromAidl(hBuf.buffer),
-                                                 /*out*/ &mBufferReqs[i].bufPtr);
+                    native_handle_t* h = makeFromAidl(hBuf.buffer);
+                    Status s = parent->importBuffer(streamId, hBuf.bufferId, h,
+                                                    /*out*/ &mBufferReqs[i].bufPtr);
+                    native_handle_delete(h);
                     lk.lock();
 
                     if (s != Status::OK) {
                         ALOGE("%s: stream %d import buffer failed!", __FUNCTION__, streamId);
                         cleanupInflightFences(importedFences, i - 1);
-                        return false;
+                        hasError = true;
+                        break;
                     }
-                    if (!sHandleImporter.importFence(makeFromAidl(hBuf.acquireFence),
-                                                     mBufferReqs[i].acquireFence)) {
+                    h = makeFromAidl(hBuf.acquireFence);
+                    if (!sHandleImporter.importFence(h, mBufferReqs[i].acquireFence)) {
                         ALOGE("%s: stream %d import fence failed!", __FUNCTION__, streamId);
                         cleanupInflightFences(importedFences, i - 1);
-                        return false;
+                        native_handle_delete(h);
+                        hasError = true;
+                        break;
                     }
+                    native_handle_delete(h);
                     importedFences[i] = mBufferReqs[i].acquireFence;
                 } break;
                 default:
                     ALOGE("%s: Unknown StreamBuffersVal!", __FUNCTION__);
-                    return false;
+                    hasError = true;
+                    break;
+            }
+            if (hasError) {
+                mBufferReqs.clear();
+                lk.unlock();
+                mRequestDoneCond.notify_one();
+                return true;
             }
         }
     } else {
         ALOGE("%s: requestStreamBuffers call failed!", __FUNCTION__);
+        mBufferReqs.clear();
+        lk.unlock();
+        mRequestDoneCond.notify_one();
+        return true;
     }
 
     mPendingReturnBufferReqs = std::move(mBufferReqs);
@@ -2815,6 +2844,11 @@ bool ExternalCameraDeviceSession::OutputThread::threadLoop() {
         if (res != 0) {
             // For some webcam, the first few V4L2 frames might be malformed...
             ALOGE("%s: Convert V4L2 frame to YU12 failed! res %d", __FUNCTION__, res);
+
+            ATRACE_BEGIN("Wait for BufferRequest done");
+            res = waitForBufferRequestDone(&req->buffers);
+            ATRACE_END();
+
             lk.unlock();
             Status st = parent->processCaptureRequestError(req);
             if (st != Status::OK) {
@@ -2830,9 +2864,15 @@ bool ExternalCameraDeviceSession::OutputThread::threadLoop() {
     ATRACE_END();
 
     if (res != 0) {
+        // HAL buffer management buffer request can fail
         ALOGE("%s: wait for BufferRequest done failed! res %d", __FUNCTION__, res);
         lk.unlock();
-        return onDeviceError("%s: failed to process buffer request error!", __FUNCTION__);
+        Status st = parent->processCaptureRequestError(req);
+        if (st != Status::OK) {
+            return onDeviceError("%s: failed to process capture request error!", __FUNCTION__);
+        }
+        signalRequestDone();
+        return true;
     }
 
     ALOGV("%s processing new request", __FUNCTION__);

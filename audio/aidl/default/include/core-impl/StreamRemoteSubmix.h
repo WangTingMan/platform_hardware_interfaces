@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "core-impl/Stream.h"
-#include "core-impl/StreamSwitcher.h"
+#include "deprecated/StreamSwitcher.h"
 #include "r_submix/SubmixRoute.h"
 
 namespace aidl::android::hardware::audio::core {
@@ -29,7 +29,9 @@ class StreamRemoteSubmix : public StreamCommonImpl {
     StreamRemoteSubmix(
             StreamContext* context, const Metadata& metadata,
             const ::aidl::android::media::audio::common::AudioDeviceAddress& deviceAddress);
+    ~StreamRemoteSubmix();
 
+    // Methods of 'DriverInterface'.
     ::android::status_t init() override;
     ::android::status_t drain(StreamDescriptor::DrainMode) override;
     ::android::status_t flush() override;
@@ -55,8 +57,8 @@ class StreamRemoteSubmix : public StreamCommonImpl {
     r_submix::AudioConfig mStreamConfig;
     std::shared_ptr<r_submix::SubmixRoute> mCurrentRoute = nullptr;
 
-    // limit for number of read error log entries to avoid spamming the logs
-    static constexpr int kMaxReadErrorLogs = 5;
+    // Limit for the number of error log entries to avoid spamming the logs.
+    static constexpr int kMaxErrorLogs = 5;
     // The duration of kMaxReadFailureAttempts * READ_ATTEMPT_SLEEP_MS must be strictly inferior
     // to the duration of a record buffer at the current record sample rate (of the device, not of
     // the recording itself). Here we have: 3 * 5ms = 15ms < 1024 frames * 1000 / 48000 = 21.333ms
@@ -68,9 +70,10 @@ class StreamRemoteSubmix : public StreamCommonImpl {
     long mFramesSinceStart = 0;
     int mReadErrorCount = 0;
     int mReadFailureCount = 0;
+    int mWriteShutdownCount = 0;
 };
 
-class StreamInRemoteSubmix final : public StreamIn, public StreamSwitcher {
+class StreamInRemoteSubmix final : public StreamIn, public deprecated::StreamSwitcher {
   public:
     friend class ndk::SharedRefBase;
     StreamInRemoteSubmix(
@@ -82,7 +85,7 @@ class StreamInRemoteSubmix final : public StreamIn, public StreamSwitcher {
     DeviceSwitchBehavior switchCurrentStream(
             const std::vector<::aidl::android::media::audio::common::AudioDevice>& devices)
             override;
-    std::unique_ptr<StreamCommonInterfaceEx> createNewStream(
+    std::unique_ptr<deprecated::StreamCommonInterfaceEx> createNewStream(
             const std::vector<::aidl::android::media::audio::common::AudioDevice>& devices,
             StreamContext* context, const Metadata& metadata) override;
     void onClose(StreamDescriptor::State) override { defaultOnClose(); }
@@ -91,7 +94,7 @@ class StreamInRemoteSubmix final : public StreamIn, public StreamSwitcher {
             override;
 };
 
-class StreamOutRemoteSubmix final : public StreamOut, public StreamSwitcher {
+class StreamOutRemoteSubmix final : public StreamOut, public deprecated::StreamSwitcher {
   public:
     friend class ndk::SharedRefBase;
     StreamOutRemoteSubmix(
@@ -104,7 +107,7 @@ class StreamOutRemoteSubmix final : public StreamOut, public StreamSwitcher {
     DeviceSwitchBehavior switchCurrentStream(
             const std::vector<::aidl::android::media::audio::common::AudioDevice>& devices)
             override;
-    std::unique_ptr<StreamCommonInterfaceEx> createNewStream(
+    std::unique_ptr<deprecated::StreamCommonInterfaceEx> createNewStream(
             const std::vector<::aidl::android::media::audio::common::AudioDevice>& devices,
             StreamContext* context, const Metadata& metadata) override;
     void onClose(StreamDescriptor::State) override { defaultOnClose(); }

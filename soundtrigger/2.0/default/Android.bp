@@ -26,9 +26,6 @@ cc_library_shared {
     name: "android.hardware.soundtrigger@2.0-core",
     defaults: ["hidl_defaults"],
     vendor_available: true,
-    vndk: {
-        enabled: true,
-    },
     srcs: [
         "SoundTriggerHalImpl.cpp",
     ],
@@ -48,4 +45,37 @@ cc_library_shared {
         "libaudio_system_headers",
         "libhardware_headers",
     ],
+}
+
+soong_config_module_type {
+    name: "soundtrigger_cc_library_shared",
+    module_type: "cc_library_shared",
+    config_namespace: "soundtrigger",
+    value_variables: [
+        "audioserver_multilib",
+    ],
+    properties: ["compile_multilib"],
+}
+
+soundtrigger_cc_library_shared {
+    name: "android.hardware.soundtrigger@2.0-impl",
+    vendor: true,
+    relative_install_path: "hw",
+    srcs: ["FetchISoundTriggerHw.cpp"],
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
+    shared_libs: [
+        "libhardware",
+        "libutils",
+        "android.hardware.soundtrigger@2.0",
+        "android.hardware.soundtrigger@2.0-core",
+    ],
+    compile_multilib: "32",
+    soong_config_variables: {
+        audioserver_multilib: {
+            compile_multilib: "%s",
+        },
+    },
 }

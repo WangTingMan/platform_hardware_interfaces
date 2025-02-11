@@ -81,6 +81,10 @@ bool EvsVideoEmulatedCamera::initialize() {
         }
     }
 
+    return initializeMediaCodec();
+}
+
+bool EvsVideoEmulatedCamera::initializeMediaCodec() {
     // Initialize Media Codec and file format.
     std::unique_ptr<AMediaFormat, FormatDeleter> format;
     const char* mime;
@@ -222,10 +226,9 @@ void EvsVideoEmulatedCamera::onCodecOutputAvailable(const int32_t index,
 
     // Lock our output buffer for writing
     uint8_t* pixels = nullptr;
-    int32_t bytesPerStride = 0;
     auto& mapper = ::android::GraphicBufferMapper::get();
     mapper.lock(renderBufferHandle, GRALLOC_USAGE_SW_WRITE_OFTEN | GRALLOC_USAGE_SW_READ_NEVER,
-                ::android::Rect(mWidth, mHeight), (void**)&pixels, nullptr, &bytesPerStride);
+                ::android::Rect(mWidth, mHeight), (void**)&pixels);
 
     // If we failed to lock the pixel buffer, we're about to crash, but log it first
     if (!pixels) {
@@ -245,13 +248,6 @@ void EvsVideoEmulatedCamera::onCodecOutputAvailable(const int32_t index,
     for (size_t i = 0; i < uvSize; ++i) {
         *(pixels++) = *(u_head++);
         *(pixels++) = *(v_head++);
-    }
-
-    const auto status =
-            AMediaCodec_releaseOutputBuffer(mVideoCodec.get(), index, /* render = */ false);
-    if (status != AMEDIA_OK) {
-        LOG(ERROR) << __func__
-                   << ": Received error in releasing output buffer. Error code: " << status;
     }
 
     // Release our output buffer
@@ -306,6 +302,19 @@ void EvsVideoEmulatedCamera::renderOneFrame() {
         return;
     }
     onCodecOutputAvailable(codecOutputputBufferIdx, info);
+    const auto release_status = AMediaCodec_releaseOutputBuffer(
+            mVideoCodec.get(), codecOutputputBufferIdx, /* render = */ false);
+    if (release_status != AMEDIA_OK) {
+        LOG(ERROR) << __func__
+                   << ": Received error in releasing output buffer. Error code: " << release_status;
+    }
+
+    if ((info.flags & AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM) != 0) {
+        LOG(INFO) << "Start video playback from the beginning.";
+        AMediaExtractor_seekTo(mVideoExtractor.get(), /* seekPosUs= */ 0,
+                               AMEDIAEXTRACTOR_SEEK_CLOSEST_SYNC);
+        AMediaCodec_flush(mVideoCodec.get());
+    }
 }
 
 void EvsVideoEmulatedCamera::initializeParameters() {
@@ -339,11 +348,24 @@ bool EvsVideoEmulatedCamera::startVideoStreamImpl_locked(
         std::unique_lock<std::mutex>& /* lck */) {
     mStream = receiver;
 
-    const media_status_t status = AMediaCodec_start(mVideoCodec.get());
-    if (status != AMEDIA_OK) {
-        LOG(ERROR) << __func__ << ": Received error in starting decoder. Error code: " << status
-                   << ".";
-        return false;
+    if (auto status = AMediaCodec_start(mVideoCodec.get()); status != AMEDIA_OK) {
+        LOG(INFO) << __func__ << ": Received error in starting decoder. "
+                     << "Trying again after resetting this emulated device.";
+
+        if (!initializeMediaCodec()) {
+            LOG(ERROR) << __func__ << ": Failed to re-configure the media codec.";
+            return false;
+        }
+
+        AMediaExtractor_seekTo(mVideoExtractor.get(), /* seekPosUs= */ 0,
+                               AMEDIAEXTRACTOR_SEEK_CLOSEST_SYNC);
+        AMediaCodec_flush(mVideoCodec.get());
+
+        if(auto status = AMediaCodec_start(mVideoCodec.get()); status != AMEDIA_OK) {
+            LOG(ERROR) << __func__ << ": Received error again in starting decoder. "
+                       << "Error code: " << status;
+            return false;
+        }
     }
     mCaptureThread = std::thread([this]() { generateFrames(); });
 
@@ -366,6 +388,12 @@ bool EvsVideoEmulatedCamera::postVideoStreamStop_locked(ndk::ScopedAStatus& stat
     if (!Base::postVideoStreamStop_locked(status, lck)) {
         return false;
     }
+
+    EvsEventDesc event = { .aType = EvsEventType::STREAM_STOPPED, };
+    if (auto result = mStream->notify(event); !result.isOk()) {
+        LOG(WARNING) << "Failed to notify the end of the stream.";
+    }
+
     mStream = nullptr;
     return true;
 }

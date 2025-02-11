@@ -16,6 +16,7 @@
 
 cc_test {
     name: "VtsHalThreadNetworkTargetTest",
+    team: "trendy_team_fwk_thread_network",
     defaults: [
         "VtsHalTargetTestDefaults",
         "use_libaidlvintf_gtest_helper_static",
@@ -31,6 +32,7 @@ cc_test {
     static_libs: [
         "android.hardware.threadnetwork-V1-ndk",
     ],
+    test_config: "VtsHalThreadNetworkTargetTest.xml",
     test_suites: [
         "general-tests",
         "vts",

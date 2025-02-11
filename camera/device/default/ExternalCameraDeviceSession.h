@@ -122,7 +122,7 @@ class ExternalCameraDeviceSession : public BnCameraDeviceSession, public OutputT
 
     static const int kMaxProcessedStream = 2;
     static const int kMaxStallStream = 1;
-    static const uint32_t kMaxBytesPerPixel = 2;
+    static const uint32_t kMaxBytesPerPixel = 3;
 
     class BufferRequestThread : public SimpleThread {
       public:
@@ -266,15 +266,6 @@ class ExternalCameraDeviceSession : public BnCameraDeviceSession, public OutputT
                             const std::vector<SupportedV4L2Format>& supportedFormats,
                             const ExternalCameraConfig& cfg);
 
-    // Validate and import request's output buffers and acquire fence
-    Status importRequestLocked(const CaptureRequest& request,
-                               std::vector<buffer_handle_t*>& allBufPtrs,
-                               std::vector<int>& allFences);
-
-    Status importRequestLockedImpl(const CaptureRequest& request,
-                                   std::vector<buffer_handle_t*>& allBufPtrs,
-                                   std::vector<int>& allFences);
-
     Status importBufferLocked(int32_t streamId, uint64_t bufId, buffer_handle_t buf,
                               /*out*/ buffer_handle_t** outBufPtr);
     static void cleanupInflightFences(std::vector<int>& allFences, size_t numFences);
@@ -391,6 +382,9 @@ class ExternalCameraDeviceSession : public BnCameraDeviceSession, public OutputT
     std::string mExifMake;
     std::string mExifModel;
     /* End of members not changed after initialize() */
+
+    // The max tolerant lag between the dequeued v4l2 buffer and current capture request.
+    uint64_t mMaxLagNs;
 };
 
 }  // namespace implementation

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 #include <string_view>
 
 #include <aidl/Gtest.h>
@@ -102,37 +103,26 @@ class KeyMintAidlTestBase : public ::testing::TestWithParam<string> {
     uint32_t vendor_patch_level() { return vendor_patch_level_; }
     uint32_t boot_patch_level(const vector<KeyCharacteristics>& key_characteristics);
     uint32_t boot_patch_level();
+    std::optional<vector<uint8_t>> getModuleHash();
     bool isDeviceIdAttestationRequired();
     bool isSecondImeiIdAttestationRequired();
+    std::optional<bool> isRkpOnly();
 
     bool Curve25519Supported();
 
+    ErrorCode GenerateKey(const AuthorizationSet& key_desc);
+
     ErrorCode GenerateKey(const AuthorizationSet& key_desc, vector<uint8_t>* key_blob,
-                          vector<KeyCharacteristics>* key_characteristics) {
-        return GenerateKey(key_desc, std::nullopt /* attest_key */, key_blob, key_characteristics,
-                           &cert_chain_);
-    }
+                          vector<KeyCharacteristics>* key_characteristics);
+
+    ErrorCode GenerateKey(const AuthorizationSet& key_desc, vector<uint8_t>* key_blob,
+                          vector<KeyCharacteristics>* key_characteristics,
+                          vector<Certificate>* cert_chain);
+
     ErrorCode GenerateKey(const AuthorizationSet& key_desc,
                           const optional<AttestationKey>& attest_key, vector<uint8_t>* key_blob,
                           vector<KeyCharacteristics>* key_characteristics,
                           vector<Certificate>* cert_chain);
-    ErrorCode GenerateKey(const AuthorizationSet& key_desc,
-                          const optional<AttestationKey>& attest_key = std::nullopt);
-
-    // Generate key for implementations which do not support factory attestation.
-    ErrorCode GenerateKeyWithSelfSignedAttestKey(const AuthorizationSet& attest_key_desc,
-                                                 const AuthorizationSet& key_desc,
-                                                 vector<uint8_t>* key_blob,
-                                                 vector<KeyCharacteristics>* key_characteristics,
-                                                 vector<Certificate>* cert_chain);
-
-    ErrorCode GenerateKeyWithSelfSignedAttestKey(const AuthorizationSet& attest_key_desc,
-                                                 const AuthorizationSet& key_desc,
-                                                 vector<uint8_t>* key_blob,
-                                                 vector<KeyCharacteristics>* key_characteristics) {
-        return GenerateKeyWithSelfSignedAttestKey(attest_key_desc, key_desc, key_blob,
-                                                  key_characteristics, &cert_chain_);
-    }
 
     ErrorCode ImportKey(const AuthorizationSet& key_desc, KeyFormat format,
                         const string& key_material, vector<uint8_t>* key_blob,
@@ -372,7 +362,6 @@ class KeyMintAidlTestBase : public ::testing::TestWithParam<string> {
     bool is_strongbox_enabled(void) const;
     bool is_chipset_allowed_km4_strongbox(void) const;
     bool shouldSkipAttestKeyTest(void) const;
-    void skipAttestKeyTest(void) const;
 
     void assert_mgf_digests_present_or_not_in_key_characteristics(
             const vector<KeyCharacteristics>& key_characteristics,
@@ -401,18 +390,24 @@ class KeyMintAidlTestBase : public ::testing::TestWithParam<string> {
                                     const string& plaintext, const string& exp_cipher_text);
 };
 
-// If the given property is available, add it to the tag set under the given tag ID.
+// If the given string is non-empty, add it to the tag set under the given tag ID.
 template <Tag tag>
-void add_tag_from_prop(AuthorizationSetBuilder* tags, TypedTag<TagType::BYTES, tag> ttag,
-                       const char* prop) {
-    std::string prop_value = ::android::base::GetProperty(prop, /* default= */ "");
+void add_tag(AuthorizationSetBuilder* tags, TypedTag<TagType::BYTES, tag> ttag,
+             const std::string& prop_value) {
     if (!prop_value.empty()) {
         tags->Authorization(ttag, prop_value.data(), prop_value.size());
     }
 }
 
-// Return the VSR API level for this device.
-int get_vsr_api_level();
+// If the given property is available, add it to the tag set under the given tag ID.
+template <Tag tag>
+void add_tag_from_prop(AuthorizationSetBuilder* tags, TypedTag<TagType::BYTES, tag> ttag,
+                       const char* prop) {
+    add_tag(tags, ttag, ::android::base::GetProperty(prop, /* default= */ ""));
+}
+
+// Return the vendor API level for this device.
+int get_vendor_api_level();
 
 // Indicate whether the test is running on a GSI image.
 bool is_gsi_image();
@@ -446,6 +441,21 @@ void p256_pub_key(const vector<uint8_t>& coseKeyData, EVP_PKEY_Ptr* signingKey);
 void device_id_attestation_check_acceptable_error(Tag tag, const ErrorCode& result);
 bool check_feature(const std::string& name);
 std::optional<int32_t> keymint_feature_value(bool strongbox);
+std::string get_imei(int slot);
+
+// Retrieve a device ID property value, to match what is expected in attestations.
+std::optional<std::string> get_attestation_id(const char* prop);
+
+// Add the appropriate attestation device ID tag value to the provided `AuthorizationSetBuilder`,
+// if found.
+template <Tag tag>
+void add_attestation_id(AuthorizationSetBuilder* attestation_id_tags,
+                        TypedTag<TagType::BYTES, tag> tag_type, const char* prop) {
+    auto prop_value = get_attestation_id(prop);
+    if (prop_value.has_value()) {
+        add_tag(attestation_id_tags, tag_type, prop_value.value());
+    }
+}
 
 AuthorizationSet HwEnforcedAuthorizations(const vector<KeyCharacteristics>& key_characteristics);
 AuthorizationSet SwEnforcedAuthorizations(const vector<KeyCharacteristics>& key_characteristics);
@@ -460,29 +470,6 @@ ErrorCode GetReturnErrorCode(const Status& result);
                              ::android::PrintInstanceNameToString);                  \
     GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(name);
 
-// Use `ro.product.<property>_for_attestation` property for attestation if it is present else
-// fallback to use `ro.product.vendor.<property>` if it is present else fallback to
-// `ro.product.<property>`. Similar logic can be seen in Java method `getVendorDeviceIdProperty`
-// in frameworks/base/core/java/android/os/Build.java.
-template <Tag tag>
-void add_attestation_id(AuthorizationSetBuilder* attestation_id_tags,
-                        TypedTag<TagType::BYTES, tag> tag_type, const char* prop) {
-    ::android::String8 prop_name =
-            ::android::String8::format("ro.product.%s_for_attestation", prop);
-    std::string prop_value = ::android::base::GetProperty(prop_name.c_str(), /* default= */ "");
-    if (!prop_value.empty()) {
-        add_tag_from_prop(attestation_id_tags, tag_type, prop_name.c_str());
-    } else {
-        prop_name = ::android::String8::format("ro.product.vendor.%s", prop);
-        prop_value = ::android::base::GetProperty(prop_name.c_str(), /* default= */ "");
-        if (!prop_value.empty()) {
-            add_tag_from_prop(attestation_id_tags, tag_type, prop_name.c_str());
-        } else {
-            prop_name = ::android::String8::format("ro.product.%s", prop);
-            add_tag_from_prop(attestation_id_tags, tag_type, prop_name.c_str());
-        }
-    }
-}
 }  // namespace test
 
 }  // namespace aidl::android::hardware::security::keymint

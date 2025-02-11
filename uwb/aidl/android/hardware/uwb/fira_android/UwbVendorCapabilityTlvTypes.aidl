@@ -41,6 +41,18 @@ enum UwbVendorCapabilityTlvTypes {
      */
     SUPPORTED_POWER_STATS_QUERY = 0xC0,
 
+    /**
+     * 1 byte bitmask to indicate which antennas modes are supported.
+     * 0x01 = "Omni mode",
+     * 0x02 = "Directional mode",
+     */
+    SUPPORTED_ANTENNA_MODES = 0xC1,
+
+    /**
+     * Int value to indicate max supported session count
+     */
+    SUPPORTED_MAX_SESSION_COUNT = 0xEB,
+
     /*********************************************
      * CCC specific
      ********************************************/

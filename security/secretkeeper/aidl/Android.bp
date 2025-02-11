@@ -28,7 +28,8 @@ aidl_interface {
     frozen: false,
     backend: {
         java: {
-            enabled: false,
+            enabled: true,
+            platform_apis: true,
         },
         ndk: {
             enabled: true,
@@ -41,6 +42,13 @@ aidl_interface {
             ],
         },
     },
+    versions_with_info: [
+        {
+            version: "1",
+            imports: ["android.hardware.security.authgraph-V1"],
+        },
+    ],
+
 }
 
 // cc_defaults that includes the latest Secretkeeper AIDL library.
@@ -80,6 +88,6 @@ cc_defaults {
 rust_defaults {
     name: "secretkeeper_use_latest_hal_aidl_rust",
     rustlibs: [
-        "android.hardware.security.secretkeeper-V1-rust",
+        "android.hardware.security.secretkeeper-V2-rust",
     ],
 }

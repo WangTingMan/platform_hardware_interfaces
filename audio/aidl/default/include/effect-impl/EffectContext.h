@@ -82,7 +82,16 @@ class EffectContext {
 
     virtual ::android::hardware::EventFlag* getStatusEventFlag();
 
+    virtual RetCode enable();
+    virtual RetCode disable();
+    virtual RetCode reset();
+
+    virtual RetCode startDraining();
+    virtual RetCode finishDraining();
+    virtual bool isDraining();
+
   protected:
+    bool mIsDraining = false;
     int mVersion = 0;
     size_t mInputFrameSize = 0;
     size_t mOutputFrameSize = 0;

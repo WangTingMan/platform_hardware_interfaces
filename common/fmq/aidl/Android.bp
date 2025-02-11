@@ -11,10 +11,8 @@ aidl_interface {
     name: "android.hardware.common.fmq",
     host_supported: true,
     vendor_available: true,
-    vndk: {
-        enabled: true,
-        support_system_process: true,
-    },
+    product_available: true,
+    double_loadable: true,
     srcs: [
         "android/hardware/common/fmq/*.aidl",
     ],
@@ -30,15 +28,13 @@ aidl_interface {
             sdk_version: "module_current",
         },
         cpp: {
-            // FMQ will not be supported in the cpp backend because the parcelables
-            // are not stable enough for use in shared memory
-            enabled: false,
+            // FMQ is only supported for PODs with the cpp backend
+            enabled: true,
         },
         ndk: {
             apex_available: [
                 "//apex_available:platform",
-                "com.android.btservices",
-                "com.android.media.swcodec",
+                "//apex_available:anyapex",
             ],
             min_sdk_version: "29",
         },

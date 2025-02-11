@@ -28,19 +28,18 @@ aidl_interface {
     name: "android.hardware.graphics.composer3",
     host_supported: true,
     vendor_available: true,
-    vndk: {
-        enabled: true,
-        support_system_process: true,
-    },
+    double_loadable: true,
     frozen: false,
-    vndk_use_version: "1",
     srcs: [
         "android/hardware/graphics/composer3/*.aidl",
     ],
     stability: "vintf",
+    defaults: [
+        "android.hardware.graphics.common-latest",
+    ],
     imports: [
-        "android.hardware.graphics.common-V5",
         "android.hardware.common-V2",
+        "android.hardware.drm.common-V1",
     ],
     backend: {
         cpp: {
@@ -51,9 +50,6 @@ aidl_interface {
             enabled: false,
         },
         ndk: {
-            vndk: {
-                enabled: true,
-            },
         },
         rust: {
             enabled: true,
@@ -63,14 +59,21 @@ aidl_interface {
         {
             version: "1",
             imports: [
-                "android.hardware.graphics.common-V5",
+                "android.hardware.graphics.common-V6",
                 "android.hardware.common-V2",
             ],
         },
         {
             version: "2",
             imports: [
-                "android.hardware.graphics.common-V5",
+                "android.hardware.graphics.common-V6",
+                "android.hardware.common-V2",
+            ],
+        },
+        {
+            version: "3",
+            imports: [
+                "android.hardware.graphics.common-V6",
                 "android.hardware.common-V2",
             ],
         },

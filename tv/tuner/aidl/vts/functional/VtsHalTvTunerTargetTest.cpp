@@ -100,7 +100,9 @@ void TunerFilterAidlTest::reconfigSingleFilterInDemuxTest(FilterConfig filterCon
     ASSERT_TRUE(mFilterTests.configFilter(filterReconf.settings, filterId));
     ASSERT_TRUE(mFilterTests.startFilter(filterId));
     ASSERT_TRUE(mFrontendTests.tuneFrontend(frontendConf, true /*testWithDemux*/));
-    ASSERT_TRUE(mFilterTests.startIdTest(filterId));
+    if (!isPassthroughFilter(filterReconf)) {
+        ASSERT_TRUE(mFilterTests.startIdTest(filterId));
+    }
     ASSERT_TRUE(mFrontendTests.stopTuneFrontend(true /*testWithDemux*/));
     ASSERT_TRUE(mFilterTests.stopFilter(filterId));
     ASSERT_TRUE(mFilterTests.closeFilter(filterId));
@@ -152,7 +154,9 @@ void TunerBroadcastAidlTest::broadcastSingleFilterTest(FilterConfig filterConf,
     ASSERT_TRUE(mFilterTests.startFilter(filterId));
     // tune test
     ASSERT_TRUE(mFrontendTests.tuneFrontend(frontendConf, true /*testWithDemux*/));
-    ASSERT_TRUE(filterDataOutputTest());
+    if (!isPassthroughFilter(filterConf)) {
+        ASSERT_TRUE(filterDataOutputTest());
+    }
     ASSERT_TRUE(mFrontendTests.stopTuneFrontend(true /*testWithDemux*/));
     ASSERT_TRUE(mFilterTests.stopFilter(filterId));
     ASSERT_TRUE(mFilterTests.closeFilter(filterId));
@@ -210,7 +214,9 @@ void TunerBroadcastAidlTest::mediaFilterUsingSharedMemoryTest(FilterConfig filte
     ASSERT_TRUE(mFilterTests.startFilter(filterId));
     // tune test
     ASSERT_TRUE(mFrontendTests.tuneFrontend(frontendConf, true /*testWithDemux*/));
-    ASSERT_TRUE(filterDataOutputTest());
+    if (!isPassthroughFilter(filterConf)) {
+        ASSERT_TRUE(filterDataOutputTest());
+    }
     ASSERT_TRUE(mFrontendTests.stopTuneFrontend(true /*testWithDemux*/));
     ASSERT_TRUE(mFilterTests.stopFilter(filterId));
     ASSERT_TRUE(mFilterTests.releaseShareAvHandle(filterId));
@@ -1112,6 +1118,10 @@ TEST_P(TunerRecordAidlTest, RecordDataFlowWithTsRecordFilterTest) {
     if (!record.support) {
         return;
     }
+    // Recording is not currently supported for IPTV frontend
+    if (frontendMap[live.frontendId].type == FrontendType::IPTV) {
+        return;
+    }
     auto record_configs = generateRecordConfigurations();
     for (auto& configuration : record_configs) {
         record = configuration;
@@ -1124,6 +1134,10 @@ TEST_P(TunerRecordAidlTest, AttachFiltersToRecordTest) {
     description("Attach a single filter to the record dvr test.");
     // TODO use parameterized tests
     if (!record.support) {
+        return;
+    }
+    // Recording is not currently supported for IPTV frontend
+    if (frontendMap[live.frontendId].type == FrontendType::IPTV) {
         return;
     }
     auto record_configs = generateRecordConfigurations();
@@ -1156,6 +1170,10 @@ TEST_P(TunerRecordAidlTest, LnbRecordDataFlowWithTsRecordFilterTest) {
 TEST_P(TunerRecordAidlTest, SetStatusCheckIntervalHintToRecordTest) {
     description("Set status check interval hint to record test.");
     if (!record.support) {
+        return;
+    }
+    // Recording is not currently supported for IPTV frontend
+    if (frontendMap[live.frontendId].type == FrontendType::IPTV) {
         return;
     }
     auto record_configs = generateRecordConfigurations();
@@ -1195,6 +1213,10 @@ TEST_P(TunerFrontendAidlTest, BlindScanFrontend) {
     if (!scan.hasFrontendConnection) {
         return;
     }
+    // Blind scan is not applicable for IPTV frontend
+    if (frontendMap[live.frontendId].type == FrontendType::IPTV) {
+        return;
+    }
     vector<ScanHardwareConnections> scan_configs = generateScanConfigurations();
     for (auto& configuration : scan_configs) {
         scan = configuration;
@@ -1221,6 +1243,10 @@ TEST_P(TunerFrontendAidlTest, TuneFrontendWithFrontendSettings) {
 TEST_P(TunerFrontendAidlTest, BlindScanFrontendWithEndFrequency) {
     description("Run an blind frontend scan with setting and check lock scanMessage");
     if (!scan.hasFrontendConnection) {
+        return;
+    }
+    // Blind scan is not application for IPTV frontend
+    if (frontendMap[live.frontendId].type == FrontendType::IPTV) {
         return;
     }
     vector<ScanHardwareConnections> scan_configs = generateScanConfigurations();

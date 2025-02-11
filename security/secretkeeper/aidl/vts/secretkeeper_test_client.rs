@@ -16,11 +16,12 @@
 
 use android_hardware_security_secretkeeper::aidl::android::hardware::security::secretkeeper::ISecretkeeper::ISecretkeeper;
 use android_hardware_security_secretkeeper::aidl::android::hardware::security::secretkeeper::SecretId::SecretId;
+use android_hardware_security_secretkeeper::aidl::android::hardware::security::secretkeeper::PublicKey::PublicKey;
 use authgraph_vts_test as ag_vts;
 use authgraph_boringssl as boring;
 use authgraph_core::key;
 use coset::{CborOrdering, CborSerializable, CoseEncrypt0, CoseKey};
-use dice_policy_builder::{CertIndex, ConstraintSpec, ConstraintType, MissingAction, WILDCARD_FULL_ARRAY, policy_for_dice_chain};
+use dice_policy_builder::{TargetEntry, ConstraintSpec, ConstraintType, MissingAction, WILDCARD_FULL_ARRAY, policy_for_dice_chain};
 use rdroidtest::{ignore_if, rdroidtest};
 use secretkeeper_client::dice::OwnedDiceArtifactsWithExplicitKey;
 use secretkeeper_client::{SkSession, Error as SkClientError};
@@ -36,7 +37,7 @@ use secretkeeper_comm::data_types::packet::{ResponsePacket, ResponseType};
 use secretkeeper_test::{
     AUTHORITY_HASH, MODE, CONFIG_DESC, SECURITY_VERSION, SUBCOMPONENT_AUTHORITY_HASH,
     SUBCOMPONENT_DESCRIPTORS, SUBCOMPONENT_SECURITY_VERSION,
-    dice_sample::make_explicit_owned_dice
+    dice_sample::{make_explicit_owned_dice_for_uds, make_explicit_owned_dice, make_large_explicit_owned_dice, CDI_SIZE}
 };
 use std::fs;
 use std::path::Path;
@@ -70,20 +71,32 @@ const SECRET_EXAMPLE: Secret = Secret([
     0x06, 0xAC, 0x36, 0x8B, 0x3C, 0x95, 0x50, 0x16, 0x67, 0x71, 0x65, 0x26, 0xEB, 0xD0, 0xC3, 0x98,
 ]);
 
-// Android expects the public key of Secretkeeper instance to be present in the Linux device tree.
+// Android expects the public key of Secretkeeper instance to be available either
+// a) by being present in the Linux device tree (prior to version 2 of the secretkeeper HAL), or
+// b) via the `getSecretKeeperIdentity` operation from v2 onwards.
 // This allows clients to (cryptographically) verify that they are indeed talking to the real
 // secretkeeper.
 // Note that this is the identity of the `default` instance (and not `nonsecure`)!
-fn get_secretkeeper_identity() -> Option<CoseKey> {
-    let path = Path::new(SECRETKEEPER_KEY_HOST_DT);
-    if path.exists() {
-        let key = fs::read(path).unwrap();
-        let mut key = CoseKey::from_slice(&key).unwrap();
-        key.canonicalize(CborOrdering::Lexicographic);
-        Some(key)
+fn get_secretkeeper_identity(instance: &str) -> Option<CoseKey> {
+    let sk = get_connection(instance);
+    let key_material = if sk.getInterfaceVersion().expect("Error getting sk interface version") >= 2 {
+        let PublicKey { keyMaterial } = sk.getSecretkeeperIdentity().expect("Error calling getSecretkeeperIdentity");
+        Some(keyMaterial)
     } else {
-        None
-    }
+        let path = Path::new(SECRETKEEPER_KEY_HOST_DT);
+        if path.exists() {
+            let key_material = fs::read(path).unwrap();
+            Some(key_material)
+        } else {
+            None
+        }
+    };
+
+    key_material.map(|km| {
+        let mut cose_key = CoseKey::from_slice(&km).expect("Error deserializing CoseKey from key material");
+        cose_key.canonicalize(CborOrdering::Lexicographic);
+        cose_key
+    })
 }
 
 fn get_instances() -> Vec<(String, String)> {
@@ -289,9 +302,22 @@ impl From<secretkeeper_comm::data_types::error::Error> for Error {
     }
 }
 
-// Assert that the error is EntryNotFound
+// Assert that the error is `EntryNotFound`.
 fn assert_entry_not_found(res: Result<Secret, Error>) {
-    assert!(matches!(res.unwrap_err(), Error::SecretkeeperError(SecretkeeperError::EntryNotFound)))
+    assert_result_matches(res, SecretkeeperError::EntryNotFound)
+}
+
+// Assert that the error is `DicePolicyError`.
+fn assert_dice_policy_error(res: Result<Secret, Error>) {
+    assert_result_matches(res, SecretkeeperError::DicePolicyError)
+}
+
+fn assert_result_matches(res: Result<Secret, Error>, want: SecretkeeperError) {
+    match res {
+        Err(Error::SecretkeeperError(e)) if e == want => {}
+        Err(got) => panic!("unexpected error {got:?}, expected {want:?}"),
+        Ok(_) => panic!("unexpected success instead of {want:?}"),
+    }
 }
 
 /// Construct a sealing policy on the dice chain. This method uses the following set of
@@ -299,30 +325,29 @@ fn assert_entry_not_found(res: Result<Secret, Error>) {
 /// 1. ExactMatch on AUTHORITY_HASH (non-optional).
 /// 2. ExactMatch on MODE (non-optional).
 /// 3. GreaterOrEqual on SECURITY_VERSION (optional).
-/// 4. The second last DiceChainEntry contain SubcomponentDescriptor, for each of those:
+/// 4. The DiceChainEntry corresponding to "AVB" contains SubcomponentDescriptor, for each of those:
 ///     a) GreaterOrEqual on SECURITY_VERSION (Required)
 //      b) ExactMatch on AUTHORITY_HASH (Required).
 fn sealing_policy(dice: &[u8]) -> Vec<u8> {
-    let constraint_spec = [
+    let constraint_spec = vec![
         ConstraintSpec::new(
             ConstraintType::ExactMatch,
             vec![AUTHORITY_HASH],
             MissingAction::Fail,
-            CertIndex::All,
+            TargetEntry::All,
         ),
         ConstraintSpec::new(
             ConstraintType::ExactMatch,
             vec![MODE],
             MissingAction::Fail,
-            CertIndex::All,
+            TargetEntry::All,
         ),
         ConstraintSpec::new(
             ConstraintType::GreaterOrEqual,
             vec![CONFIG_DESC, SECURITY_VERSION],
             MissingAction::Ignore,
-            CertIndex::All,
+            TargetEntry::All,
         ),
-        // Constraints on sub components in the second last DiceChainEntry
         ConstraintSpec::new(
             ConstraintType::GreaterOrEqual,
             vec![
@@ -332,7 +357,7 @@ fn sealing_policy(dice: &[u8]) -> Vec<u8> {
                 SUBCOMPONENT_SECURITY_VERSION,
             ],
             MissingAction::Fail,
-            CertIndex::FromEnd(1),
+            TargetEntry::ByName("AVB".to_string()),
         ),
         ConstraintSpec::new(
             ConstraintType::ExactMatch,
@@ -343,11 +368,11 @@ fn sealing_policy(dice: &[u8]) -> Vec<u8> {
                 SUBCOMPONENT_AUTHORITY_HASH,
             ],
             MissingAction::Fail,
-            CertIndex::FromEnd(1),
+            TargetEntry::ByName("AVB".to_string()),
         ),
     ];
 
-    policy_for_dice_chain(dice, &constraint_spec).unwrap().to_vec().unwrap()
+    policy_for_dice_chain(dice, constraint_spec).unwrap().to_vec().unwrap()
 }
 
 /// Perform AuthGraph key exchange, returning the session keys and session ID.
@@ -445,6 +470,42 @@ fn secret_management_store_get_secret_not_found(instance: String) {
     assert_entry_not_found(sk_client.get(&ID_NOT_STORED));
 }
 
+/// A secret stored in one session should be accessible from a different session
+/// as long as the client has the same identity.
+#[rdroidtest(get_instances())]
+fn secretkeeper_get_secret_across_sessions_with_same_identity(instance: String) {
+    // Store a secret with one session.  Note that we need to hang on to the
+    // test client because it auto-deletes entries on drop.
+    let mut sk_client1 = SkClient::new(&instance).unwrap();
+    sk_client1.store(&ID_EXAMPLE, &SECRET_EXAMPLE).unwrap();
+    assert_eq!(sk_client1.get(&ID_EXAMPLE).unwrap(), SECRET_EXAMPLE);
+
+    // Retrieve the secret using a different session (that has the same identity).
+    let mut sk_client2 = SkClient::new(&instance).unwrap();
+    assert_eq!(sk_client2.get(&ID_EXAMPLE).unwrap(), SECRET_EXAMPLE);
+}
+
+/// A secret stored in one session should not be accessible from a different session
+/// if the client has a different identity.
+#[rdroidtest(get_instances())]
+fn secretkeeper_no_secret_across_sessions_with_different_identity(instance: String) {
+    // Store a secret with one session.  Note that we need to hang on to the
+    // test client because it auto-deletes entries on drop.
+    let mut sk_client1 = SkClient::new(&instance).unwrap();
+    sk_client1.store(&ID_EXAMPLE, &SECRET_EXAMPLE).unwrap();
+    assert_eq!(sk_client1.get(&ID_EXAMPLE).unwrap(), SECRET_EXAMPLE);
+
+    // Fail to retrieve the secret using a different session that has a different identity.
+    pub const ALT_UDS: &[u8; CDI_SIZE] = &[
+        0x66, 0x4f, 0xab, 0xa9, 0xa5, 0xad, 0x0f, 0x5e, 0x15, 0xc3, 0x12, 0xf7, 0x77, 0x45, 0xfa,
+        0x56, 0x18, 0x6a, 0xa6, 0x34, 0xb6, 0x7c, 0x82, 0x7b, 0x89, 0x4c, 0xc5, 0x52, 0xd3, 0x27,
+        0x36, 0x8e,
+    ];
+    let alt_identity = make_explicit_owned_dice_for_uds(5, ALT_UDS);
+    let mut sk_client2 = SkClient::with_identity(&instance, alt_identity).unwrap();
+    assert_dice_policy_error(sk_client2.get(&ID_EXAMPLE));
+}
+
 #[rdroidtest(get_instances())]
 fn secretkeeper_store_delete_ids(instance: String) {
     let mut sk_client = SkClient::new(&instance).unwrap();
@@ -520,6 +581,69 @@ fn secretkeeper_store_delete_all(instance: String) {
 
     // (Try to) Get the secret that was never stored
     assert_entry_not_found(sk_client.get(&ID_NOT_STORED));
+}
+
+// This tests creates lots of sessions one after another, to confirm that the Secretkeeper
+// instance doesn't have unbounded internal state. (Instead, it should drop older sessions
+// and the clients using those sessions would need to re-establish a new session.)
+#[rdroidtest(get_instances())]
+fn secretkeeper_many_sessions_serial(instance: String) {
+    const SESSION_COUNT: usize = 32;
+    let mut sk_clients = Vec::new();
+    for idx in 0..SESSION_COUNT {
+        let identity = make_large_explicit_owned_dice(5);
+        let mut sk_client = SkClient::with_identity(&instance, identity)
+            .expect(&format!("failed to establish session {idx}"));
+        sk_client.store(&ID_EXAMPLE, &SECRET_EXAMPLE).unwrap();
+        sk_clients.push(sk_client);
+    }
+}
+
+// This tests creates lots of sessions in parallel.  Some of these session are expected
+// to fail, but the Secretkeeper TA should survive the experience.
+#[rdroidtest(get_instances())]
+fn secretkeeper_many_sessions_parallel(instance: String) {
+    const SESSION_COUNT: usize = 32;
+
+    let mut handles = Vec::<std::thread::JoinHandle<()>>::new();
+    for idx in 0..SESSION_COUNT {
+        let instance = instance.clone();
+        handles.push(std::thread::spawn(move || {
+            // In each thread, create a session and use it.  This may (legitimately) fail at any
+            // moment.
+            let _result = use_sk_may_fail(instance, idx);
+        }));
+    }
+
+    // Wait for all activity to quiesce.
+    for handle in handles {
+        let _result = handle.join();
+    }
+
+    // Now that all the parallel activity is done, should still be able to interact with
+    // Secretkeeper.
+    let mut sk_client = SkClient::new(&instance).unwrap();
+    sk_client.store(&ID_EXAMPLE, &SECRET_EXAMPLE).unwrap();
+    assert_eq!(sk_client.get(&ID_EXAMPLE).unwrap(), SECRET_EXAMPLE);
+
+    // Remove any IDs that might have been stored in the test.
+    for idx in 0..SESSION_COUNT {
+        let mut id = ID_EXAMPLE.clone();
+        id.0[0] = idx as u8;
+        sk_client.delete(&[&id]);
+    }
+}
+
+fn use_sk_may_fail(instance: String, idx: usize) -> Result<(), Error> {
+    let identity = make_large_explicit_owned_dice(5);
+    let mut sk_client = SkClient::with_identity(&instance, identity)?;
+    let mut id = ID_EXAMPLE.clone();
+    id.0[0] = idx as u8;
+
+    sk_client.store(&id, &SECRET_EXAMPLE)?;
+    let result = sk_client.get(&id)?;
+    assert_eq!(result, SECRET_EXAMPLE);
+    Ok(())
 }
 
 // This test checks that Secretkeeper uses the expected [`RequestSeqNum`] as aad while
@@ -634,10 +758,7 @@ fn secret_management_policy_gate(instance: String) {
     let dice_chain_downgraded = make_explicit_owned_dice(/*Security version in a node */ 99);
     let mut sk_client_downgraded =
         SkClient::with_identity(&instance, dice_chain_downgraded).unwrap();
-    assert!(matches!(
-        sk_client_downgraded.get(&ID_EXAMPLE).unwrap_err(),
-        Error::SecretkeeperError(SecretkeeperError::DicePolicyError)
-    ));
+    assert_dice_policy_error(sk_client_downgraded.get(&ID_EXAMPLE));
 
     // Now get the secret with the later version, and upgrade the sealing policy along the way.
     let sealing_policy =
@@ -648,19 +769,16 @@ fn secret_management_policy_gate(instance: String) {
     );
 
     // The original version of the client should no longer be able to retrieve the secret.
-    assert!(matches!(
-        sk_client_original.get(&ID_EXAMPLE).unwrap_err(),
-        Error::SecretkeeperError(SecretkeeperError::DicePolicyError)
-    ));
+    assert_dice_policy_error(sk_client_original.get(&ID_EXAMPLE));
 }
 
 // This test checks that the identity of Secretkeeper (in context of AuthGraph key exchange) is
-// same as the one advertized in Linux device tree. This is only expected from `default` instance.
+// same as the one either a) advertized in Linux device tree or b) retrieved from SK itself
+// from (HAL v2 onwards). This is only expected from `default` instance.
 #[rdroidtest(get_instances())]
-#[ignore_if(|p| p != "default")]
 fn secretkeeper_check_identity(instance: String) {
-    let sk_key = get_secretkeeper_identity()
-        .expect("Failed to extract identity of default instance from device tree");
+    let sk_key = get_secretkeeper_identity(&instance)
+        .expect("Failed to extract identity of default instance");
     // Create a session with this expected identity. This succeeds only if the identity used by
     // Secretkeeper is sk_key.
     let _ = SkClient::with_expected_sk_identity(&instance, sk_key).unwrap();

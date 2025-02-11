@@ -15,6 +15,7 @@
  */
 
 package {
+    default_team: "trendy_team_aaos_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -39,9 +40,11 @@ cc_test {
         "FakeUserHal",
         "libgtest",
         "libgmock",
+        "libjsoncpp",
     ],
     shared_libs: [
-        "libjsoncpp",
+        "libgrpc++",
+        "libprotobuf-cpp-full",
     ],
     data: [
         ":VehicleHalDefaultProperties_JSON",
@@ -53,6 +56,8 @@ cc_test {
     defaults: [
         "VehicleHalDefaults",
     ],
+    // Need root to use vendor lib: libgrpc++.
+    require_root: true,
     test_suites: ["device-tests"],
 }
 

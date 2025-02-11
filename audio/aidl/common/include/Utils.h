@@ -26,10 +26,12 @@
 #include <aidl/android/media/audio/common/AudioDeviceType.h>
 #include <aidl/android/media/audio/common/AudioFormatDescription.h>
 #include <aidl/android/media/audio/common/AudioInputFlags.h>
+#include <aidl/android/media/audio/common/AudioIoFlags.h>
 #include <aidl/android/media/audio/common/AudioMode.h>
 #include <aidl/android/media/audio/common/AudioOutputFlags.h>
 #include <aidl/android/media/audio/common/PcmType.h>
 #include <android/binder_auto_utils.h>
+#include <utils/FastStrcmp.h>
 
 namespace ndk {
 
@@ -47,6 +49,9 @@ inline std::string errorToString(const ScopedAStatus& s) {
 
 namespace aidl::android::hardware::audio::common {
 
+// TODO: b/275135031 - move this string to AIDL interfaces.
+static constexpr char kDumpFromAudioServerArgument[] = "dump_from_audioserver";
+
 // Some values are reserved for use by the system code only.
 // HALs must not accept or emit values outside from the provided list.
 constexpr std::array<::aidl::android::media::audio::common::AudioMode, 5> kValidAudioModes = {
@@ -56,6 +61,11 @@ constexpr std::array<::aidl::android::media::audio::common::AudioMode, 5> kValid
         ::aidl::android::media::audio::common::AudioMode::IN_COMMUNICATION,
         ::aidl::android::media::audio::common::AudioMode::CALL_SCREEN,
 };
+
+constexpr bool iequals(const std::string& str1, const std::string& str2) {
+    return str1.length() == str2.length() &&
+           !fasticmp<strncmp>(str1.c_str(), str2.c_str(), str1.length());
+}
 
 constexpr size_t getPcmSampleSizeInBytes(::aidl::android::media::audio::common::PcmType pcm) {
     using ::aidl::android::media::audio::common::PcmType;
@@ -174,12 +184,29 @@ constexpr U makeBitPositionFlagMask(std::initializer_list<E> flags) {
     return result;
 }
 
+template <typename E, typename U = std::underlying_type_t<E>,
+          typename = std::enable_if_t<is_bit_position_enum<E>::value>>
+constexpr bool isAnyBitPositionFlagSet(U mask, std::initializer_list<E> flags) {
+    return (mask & makeBitPositionFlagMask<E>(flags)) != 0;
+}
+
 constexpr int32_t frameCountFromDurationUs(long durationUs, int32_t sampleRateHz) {
     return (static_cast<long long>(durationUs) * sampleRateHz) / 1000000LL;
 }
 
 constexpr int32_t frameCountFromDurationMs(int32_t durationMs, int32_t sampleRateHz) {
     return frameCountFromDurationUs(durationMs * 1000, sampleRateHz);
+}
+
+constexpr bool hasMmapFlag(const ::aidl::android::media::audio::common::AudioIoFlags& flags) {
+    return (flags.getTag() == ::aidl::android::media::audio::common::AudioIoFlags::Tag::input &&
+            isBitPositionFlagSet(
+                    flags.get<::aidl::android::media::audio::common::AudioIoFlags::Tag::input>(),
+                    ::aidl::android::media::audio::common::AudioInputFlags::MMAP_NOIRQ)) ||
+           (flags.getTag() == ::aidl::android::media::audio::common::AudioIoFlags::Tag::output &&
+            isBitPositionFlagSet(
+                    flags.get<::aidl::android::media::audio::common::AudioIoFlags::Tag::output>(),
+                    ::aidl::android::media::audio::common::AudioOutputFlags::MMAP_NOIRQ));
 }
 
 }  // namespace aidl::android::hardware::audio::common

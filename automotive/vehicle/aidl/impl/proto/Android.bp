@@ -50,6 +50,9 @@ genrule {
         "android/hardware/automotive/vehicle/VehiclePropertyStatus.pb.h",
         "android/hardware/automotive/vehicle/VehiclePropValue.pb.h",
         "android/hardware/automotive/vehicle/VehiclePropValueRequest.pb.h",
+        "android/hardware/automotive/vehicle/SubscribeOptions.pb.h",
+        "android/hardware/automotive/vehicle/SubscribeRequest.pb.h",
+        "android/hardware/automotive/vehicle/UnsubscribeRequest.pb.h",
     ],
 }
 
@@ -74,6 +77,9 @@ genrule {
         "android/hardware/automotive/vehicle/VehiclePropertyStatus.pb.cc",
         "android/hardware/automotive/vehicle/VehiclePropValue.pb.cc",
         "android/hardware/automotive/vehicle/VehiclePropValueRequest.pb.cc",
+        "android/hardware/automotive/vehicle/SubscribeOptions.pb.cc",
+        "android/hardware/automotive/vehicle/SubscribeRequest.pb.cc",
+        "android/hardware/automotive/vehicle/UnsubscribeRequest.pb.cc",
     ],
 }
 
@@ -98,5 +104,23 @@ cc_library_static {
     ],
     cflags: [
         "-Wno-unused-parameter",
+    ],
+}
+
+rust_protobuf {
+    name: "libvehicle_hal_property_protos",
+    crate_name: "vehicle_hal_property_protos",
+    protos: [":VehicleHalProtoFiles"],
+    source_stem: "vehicle_hal_property_protos",
+    host_supported: true,
+    vendor_available: true,
+    product_available: true,
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    exported_include_dirs: ["."],
+    proto_flags: [
+        "-I external/protobuf/src",
     ],
 }

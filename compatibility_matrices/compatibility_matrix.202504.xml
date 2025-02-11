@@ -1,7 +1,7 @@
 <compatibility-matrix version="1.0" type="framework" level="202504">
     <hal format="aidl">
         <name>android.hardware.audio.core</name>
-        <version>1-2</version>
+        <version>1-3</version>
         <interface>
             <name>IModule</name>
             <instance>default</instance>
@@ -20,17 +20,9 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.audio.effect</name>
-        <version>1-2</version>
+        <version>1-3</version>
         <interface>
             <name>IFactory</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
-    <hal format="aidl">
-        <name>android.hardware.audio.sounddose</name>
-        <version>1-2</version>
-        <interface>
-            <name>ISoundDoseFactory</name>
             <instance>default</instance>
         </interface>
     </hal>
@@ -44,7 +36,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.automotive.audiocontrol</name>
-        <version>2-4</version>
+        <version>2-5</version>
         <interface>
             <name>IAudioControl</name>
             <instance>default</instance>
@@ -84,7 +76,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.automotive.vehicle</name>
-        <version>1-3</version>
+        <version>1-4</version>
         <interface>
             <name>IVehicle</name>
             <instance>default</instance>
@@ -116,7 +108,7 @@
     </hal>
     <hal format="aidl" updatable-via-apex="true">
         <name>android.hardware.biometrics.fingerprint</name>
-        <version>3-4</version>
+        <version>3-5</version>
         <interface>
             <name>IFingerprint</name>
             <instance>default</instance>
@@ -132,7 +124,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.bluetooth.audio</name>
-        <version>3-4</version>
+        <version>3-5</version>
         <interface>
             <name>IBluetoothAudioProviderFactory</name>
             <instance>default</instance>
@@ -140,9 +132,17 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.bluetooth.ranging</name>
-        <version>1</version>
+        <version>1-2</version>
         <interface>
             <name>IBluetoothChannelSounding</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+    <hal format="aidl">
+        <name>android.hardware.bluetooth.socket</name>
+        <version>1</version>
+        <interface>
+            <name>IBluetoothSocket</name>
             <instance>default</instance>
         </interface>
     </hal>
@@ -202,7 +202,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.contexthub</name>
-        <version>3</version>
+        <version>3-4</version>
         <interface>
             <name>IContextHub</name>
             <instance>default</instance>
@@ -249,7 +249,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.graphics.composer3</name>
-        <version>3</version>
+        <version>4</version>
         <interface>
             <name>IComposer</name>
             <instance>default</instance>
@@ -312,7 +312,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.security.secretkeeper</name>
-        <version>1</version>
+        <version>1-2</version>
         <interface>
             <name>ISecretkeeper</name>
             <instance>default</instance>
@@ -321,7 +321,7 @@
     </hal>
     <hal format="aidl" updatable-via-apex="true">
         <name>android.hardware.security.keymint</name>
-        <version>1-3</version>
+        <version>1-4</version>
         <interface>
             <name>IKeyMintDevice</name>
             <instance>default</instance>
@@ -372,6 +372,7 @@
     </hal>
     <hal format="aidl" updatable-via-apex="true">
         <name>android.hardware.nfc</name>
+        <version>1-2</version>
         <interface>
             <name>INfc</name>
             <instance>default</instance>
@@ -395,7 +396,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.radio.config</name>
-        <version>3</version>
+        <version>3-4</version>
         <interface>
             <name>IRadioConfig</name>
             <instance>default</instance>
@@ -403,7 +404,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.radio.data</name>
-        <version>3</version>
+        <version>3-4</version>
         <interface>
             <name>IRadioData</name>
             <instance>slot1</instance>
@@ -413,7 +414,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.radio.messaging</name>
-        <version>3</version>
+        <version>3-4</version>
         <interface>
             <name>IRadioMessaging</name>
             <instance>slot1</instance>
@@ -423,7 +424,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.radio.modem</name>
-        <version>3</version>
+        <version>3-4</version>
         <interface>
             <name>IRadioModem</name>
             <instance>slot1</instance>
@@ -433,7 +434,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.radio.network</name>
-        <version>3</version>
+        <version>3-4</version>
         <interface>
             <name>IRadioNetwork</name>
             <instance>slot1</instance>
@@ -443,7 +444,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.radio.sim</name>
-        <version>3</version>
+        <version>3-4</version>
         <interface>
             <name>IRadioSim</name>
             <instance>slot1</instance>
@@ -463,7 +464,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.radio.voice</name>
-        <version>3</version>
+        <version>3-4</version>
         <interface>
             <name>IRadioVoice</name>
             <instance>slot1</instance>
@@ -473,7 +474,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.radio.ims</name>
-        <version>2</version>
+        <version>2-3</version>
         <interface>
             <name>IRadioIms</name>
             <instance>slot1</instance>
@@ -483,7 +484,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.radio.ims.media</name>
-        <version>2</version>
+        <version>2-3</version>
         <interface>
             <name>IImsMedia</name>
             <instance>default</instance>
@@ -514,6 +515,14 @@
             <instance>nonsecure</instance>
         </interface>
     </hal>
+    <hal format="aidl">
+        <name>android.hardware.security.see.hwcrypto</name>
+        <version>1</version>
+        <interface>
+            <name>IHwCryptoKey</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
     <hal format="aidl" updatable-via-apex="true">
         <name>android.hardware.security.secureclock</name>
         <version>1</version>
@@ -529,6 +538,7 @@
             <name>ISharedSecret</name>
             <instance>default</instance>
             <instance>strongbox</instance>
+            <regex-instance>.*</regex-instance>
         </interface>
     </hal>
     <hal format="aidl">
@@ -541,7 +551,7 @@
     </hal>
     <hal format="aidl">
          <name>android.hardware.soundtrigger3</name>
-         <version>1-2</version>
+         <version>1-3</version>
          <interface>
              <name>ISoundTriggerHw</name>
              <instance>default</instance>
@@ -628,7 +638,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.vibrator</name>
-        <version>1-2</version>
+        <version>1-3</version>
         <interface>
             <name>IVibrator</name>
             <instance>default</instance>
@@ -636,10 +646,19 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.vibrator</name>
-        <version>1-2</version>
+        <version>1-3</version>
         <interface>
             <name>IVibratorManager</name>
             <instance>default</instance>
+        </interface>
+    </hal>
+    <hal format="aidl">
+      <name>android.hardware.virtualization.capabilities</name>
+        <version>1</version>
+        <interface>
+            <name>IVmCapabilitiesService</name>
+            <instance>default</instance>
+            <instance>noop</instance>
         </interface>
     </hal>
     <hal format="aidl">
@@ -668,7 +687,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.wifi.hostapd</name>
-        <version>1-2</version>
+        <version>2-3</version>
         <interface>
             <name>IHostapd</name>
             <instance>default</instance>
@@ -676,7 +695,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.wifi.supplicant</name>
-        <version>2-3</version>
+        <version>3-4</version>
         <interface>
             <name>ISupplicant</name>
             <instance>default</instance>

@@ -1,4 +1,5 @@
 package {
+    default_team: "trendy_team_android_hardware_backed_security",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
     // all of the 'license_kinds' from "hardware_interfaces_license"
@@ -42,7 +43,7 @@ cc_test {
         "android.hardware.security.rkp-V3-cpp",
         "android.hardware.security.rkp-V3-ndk",
         "android.hardware.security.secureclock-V1-ndk",
-        "libcppbor_external",
+        "libcppbor",
         "libcppcose_rkp",
         "libkeymaster_portable",
         "libkeymint_vts_test_utils",

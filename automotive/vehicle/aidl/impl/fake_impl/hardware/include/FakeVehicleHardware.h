@@ -32,6 +32,8 @@
 #include <android-base/result.h>
 #include <android-base/stringprintf.h>
 #include <android-base/thread_annotations.h>
+#include <grpc++/grpc++.h>
+#include <wakeup_client.grpc.pb.h>
 
 #include <memory>
 #include <mutex>
@@ -53,6 +55,13 @@ class FakeVehicleHardware : public IVehicleHardware {
 
     FakeVehicleHardware(std::string defaultConfigDir, std::string overrideConfigDir,
                         bool forceOverride);
+
+    // s2rS2dConfig is the config for whether S2R or S2D is supported, must be a bit flag combining
+    // values from VehicleApPowerStateConfigFlag.
+    // The default implementation is reading this from system property:
+    // "ro.vendor.fake_vhal.ap_power_state_req.config".
+    FakeVehicleHardware(std::string defaultConfigDir, std::string overrideConfigDir,
+                        bool forceOverride, int32_t s2rS2dConfig);
 
     ~FakeVehicleHardware();
 
@@ -182,12 +191,16 @@ class FakeVehicleHardware : public IVehicleHardware {
     std::unordered_set<int32_t> hvacPowerDependentProps;
 
     const bool mForceOverride;
-    bool mAddExtraTestVendorConfigs;
+    bool mAddExtraTestVendorConfigs = false;
 
     // Only used during initialization.
     JsonConfigLoader mLoader;
 
-    void init();
+    // Only used during initialization. If not empty, points to an external grpc server that
+    // provides power controlling related properties.
+    std::string mPowerControllerServiceAddress = "";
+
+    void init(int32_t s2rS2dConfig);
     // Stores the initial value to property store.
     void storePropInitialValue(const ConfigDeclaration& config);
     // The callback that would be called when a vehicle property value change happens.
@@ -200,7 +213,7 @@ class FakeVehicleHardware : public IVehicleHardware {
             EXCLUDES(mLock);
     // Load the config files in format '*.json' from the directory and parse the config files
     // into a map from property ID to ConfigDeclarations.
-    void loadPropConfigsFromDir(const std::string& dirPath,
+    bool loadPropConfigsFromDir(const std::string& dirPath,
                                 std::unordered_map<int32_t, ConfigDeclaration>* configs);
     // Function to be called when a value change event comes from vehicle bus. In our fake
     // implementation, this function is only called during "--inject-event" dump command.
@@ -240,6 +253,11 @@ class FakeVehicleHardware : public IVehicleHardware {
     VhalResult<void> synchronizeHvacTemp(int32_t hvacDualOnAreaId,
                                          std::optional<float> newTempC) const;
     std::optional<int32_t> getSyncedAreaIdIfHvacDualOn(int32_t hvacTemperatureSetAreaId) const;
+    ValueResultType getPowerPropFromExternalService(int32_t propId) const;
+    ValueResultType getVehicleInUse(
+            android::hardware::automotive::remoteaccess::PowerController::Stub* clientStub) const;
+    ValueResultType getApPowerBootupReason(
+            android::hardware::automotive::remoteaccess::PowerController::Stub* clientStub) const;
 
     std::unordered_map<int32_t, ConfigDeclaration> loadConfigDeclarations();
 
@@ -256,17 +274,8 @@ class FakeVehicleHardware : public IVehicleHardware {
     std::string dumpSaveProperty(const std::vector<std::string>& options);
     std::string dumpRestoreProperty(const std::vector<std::string>& options);
     std::string dumpInjectEvent(const std::vector<std::string>& options);
+    std::string dumpSubscriptions();
 
-    template <typename T>
-    android::base::Result<T> safelyParseInt(int index, const std::string& s) {
-        T out;
-        if (!::android::base::ParseInt(s, &out)) {
-            return android::base::Error() << android::base::StringPrintf(
-                           "non-integer argument at index %d: %s\n", index, s.c_str());
-        }
-        return out;
-    }
-    android::base::Result<float> safelyParseFloat(int index, const std::string& s);
     std::vector<std::string> getOptionValues(const std::vector<std::string>& options,
                                              size_t* index);
     android::base::Result<aidl::android::hardware::automotive::vehicle::VehiclePropValue>
@@ -294,7 +303,7 @@ class FakeVehicleHardware : public IVehicleHardware {
     void registerRefreshLocked(PropIdAreaId propIdAreaId, VehiclePropertyStore::EventMode eventMode,
                                float sampleRateHz) REQUIRES(mLock);
     void unregisterRefreshLocked(PropIdAreaId propIdAreaId) REQUIRES(mLock);
-    void refreshTimeStampForInterval(int64_t intervalInNanos) EXCLUDES(mLock);
+    void refreshTimestampForInterval(int64_t intervalInNanos) EXCLUDES(mLock);
 
     static aidl::android::hardware::automotive::vehicle::VehiclePropValue createHwInputKeyProp(
             aidl::android::hardware::automotive::vehicle::VehicleHwKeyInputAction action,
@@ -313,6 +322,20 @@ class FakeVehicleHardware : public IVehicleHardware {
             const aidl::android::hardware::automotive::vehicle::VehiclePropConfig&
                     vehiclePropConfig,
             int32_t areaId);
+    template <typename T>
+    static android::base::Result<T> safelyParseInt(int index, const std::string& s) {
+        T out;
+        if (!::android::base::ParseInt(s, &out)) {
+            return android::base::Error() << android::base::StringPrintf(
+                           "non-integer argument at index %d: %s\n", index, s.c_str());
+        }
+        return out;
+    }
+    static android::base::Result<float> safelyParseFloat(int index, const std::string& s);
+    static android::base::Result<int32_t> parsePropId(const std::vector<std::string>& options,
+                                                      size_t index);
+    static android::base::Result<int32_t> parseAreaId(const std::vector<std::string>& options,
+                                                      size_t index, int32_t propId);
 };
 
 }  // namespace fake
