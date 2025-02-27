@@ -22,6 +22,8 @@
 #include <BluetoothAudioSessionReport.h>
 #include <android-base/logging.h>
 
+#include <bitset>
+
 namespace aidl {
 namespace android {
 namespace hardware {
@@ -644,10 +646,10 @@ LeAudioOffloadAudioProvider::getCapabilitiesMatchedAseConfigurationSettings(
   // Create a new LeAudioAseConfigurationSetting and return
   LeAudioAseConfigurationSetting filtered_setting{
       .audioContext = setting.audioContext,
+      .packing = setting.packing,
       .sinkAseConfiguration = setting.sinkAseConfiguration,
       .sourceAseConfiguration = setting.sourceAseConfiguration,
       .flags = setting.flags,
-      .packing = setting.packing,
   };
 
   // Get a list of all matched AseDirectionConfiguration
