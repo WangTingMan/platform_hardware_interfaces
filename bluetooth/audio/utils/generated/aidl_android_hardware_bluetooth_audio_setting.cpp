@@ -510,7 +510,7 @@ namespace aidl {
                             return instance;
                         }
 
-                        StrategyConfiguration::StrategyConfiguration(std::optional<std::string> name, std::optional<AudioLocation> audioLocation, std::optional<unsigned char> connectedDevice, std::optional<unsigned char> channelCount) : name_(std::move(name)), audioLocation_(audioLocation), connectedDevice_(connectedDevice), channelCount_(channelCount) {
+                        StrategyConfiguration::StrategyConfiguration(std::optional<std::string> name, std::optional<AudioLocation> audioLocation, std::optional<unsigned char> connectedDevice, std::optional<unsigned char> channelCount, std::optional<int> audioChannelAllocation) : name_(std::move(name)), audioLocation_(audioLocation), connectedDevice_(connectedDevice), channelCount_(channelCount), audioChannelAllocation_(audioChannelAllocation) {
                         }
 
                         const std::string& StrategyConfiguration::getName() const {
@@ -549,6 +549,15 @@ namespace aidl {
                             return channelCount_.has_value();
                         }
 
+                        const int& StrategyConfiguration::getAudioChannelAllocation() const {
+                            _xsdc_assert(hasAudioChannelAllocation());
+                            return audioChannelAllocation_.value();
+                        }
+
+                        bool StrategyConfiguration::hasAudioChannelAllocation() const {
+                            return audioChannelAllocation_.has_value();
+                        }
+
                         StrategyConfiguration StrategyConfiguration::read(xmlNode *root) {
                             std::string _raw;
                             _raw = getXmlAttribute(root, "name");
@@ -575,7 +584,13 @@ namespace aidl {
                                 unsigned char _value = static_cast<unsigned char>(std::stoi(_raw));
                                 channelCount = _value;
                             }
-                            StrategyConfiguration instance(name, audioLocation, connectedDevice, channelCount);
+                            _raw = getXmlAttribute(root, "audioChannelAllocation");
+                            std::optional<int> audioChannelAllocation = std::nullopt;
+                            if (_raw != "") {
+                                int _value = std::stoi(_raw);
+                                audioChannelAllocation = _value;
+                            }
+                            StrategyConfiguration instance(name, audioLocation, connectedDevice, channelCount, audioChannelAllocation);
                             return instance;
                         }
                     } // setting

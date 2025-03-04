@@ -366,24 +366,20 @@ inline flatbuffers::Offset<CodecSpecificConfiguration> CreateCodecSpecificConfig
 struct AudioSetSubConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef AudioSetSubConfigurationBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_DEVICE_CNT = 4,
+    VT_ASE_CHANNEL_CNT = 4,
     VT_ASE_CNT = 6,
     VT_DIRECTION = 8,
-    VT_CONFIGURATION_STRATEGY = 10,
-    VT_CODEC_ID = 12,
-    VT_CODEC_CONFIGURATION = 14
+    VT_CODEC_ID = 10,
+    VT_CODEC_CONFIGURATION = 12
   };
-  uint8_t device_cnt() const {
-    return GetField<uint8_t>(VT_DEVICE_CNT, 0);
+  uint8_t ase_channel_cnt() const {
+    return GetField<uint8_t>(VT_ASE_CHANNEL_CNT, 0);
   }
   uint8_t ase_cnt() const {
     return GetField<uint8_t>(VT_ASE_CNT, 0);
   }
   aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection direction() const {
     return static_cast<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection>(GetField<int8_t>(VT_DIRECTION, 1));
-  }
-  aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationStrategy configuration_strategy() const {
-    return static_cast<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationStrategy>(GetField<int8_t>(VT_CONFIGURATION_STRATEGY, 0));
   }
   const aidl::android::hardware::bluetooth::audio::le_audio::CodecId *codec_id() const {
     return GetStruct<const aidl::android::hardware::bluetooth::audio::le_audio::CodecId *>(VT_CODEC_ID);
@@ -393,10 +389,9 @@ struct AudioSetSubConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::T
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint8_t>(verifier, VT_DEVICE_CNT, 1) &&
+           VerifyField<uint8_t>(verifier, VT_ASE_CHANNEL_CNT, 1) &&
            VerifyField<uint8_t>(verifier, VT_ASE_CNT, 1) &&
            VerifyField<int8_t>(verifier, VT_DIRECTION, 1) &&
-           VerifyField<int8_t>(verifier, VT_CONFIGURATION_STRATEGY, 1) &&
            VerifyFieldRequired<aidl::android::hardware::bluetooth::audio::le_audio::CodecId>(verifier, VT_CODEC_ID, 2) &&
            VerifyOffsetRequired(verifier, VT_CODEC_CONFIGURATION) &&
            verifier.VerifyVector(codec_configuration()) &&
@@ -409,17 +404,14 @@ struct AudioSetSubConfigurationBuilder {
   typedef AudioSetSubConfiguration Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_device_cnt(uint8_t device_cnt) {
-    fbb_.AddElement<uint8_t>(AudioSetSubConfiguration::VT_DEVICE_CNT, device_cnt, 0);
+  void add_ase_channel_cnt(uint8_t ase_channel_cnt) {
+    fbb_.AddElement<uint8_t>(AudioSetSubConfiguration::VT_ASE_CHANNEL_CNT, ase_channel_cnt, 0);
   }
   void add_ase_cnt(uint8_t ase_cnt) {
     fbb_.AddElement<uint8_t>(AudioSetSubConfiguration::VT_ASE_CNT, ase_cnt, 0);
   }
   void add_direction(aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection direction) {
     fbb_.AddElement<int8_t>(AudioSetSubConfiguration::VT_DIRECTION, static_cast<int8_t>(direction), 1);
-  }
-  void add_configuration_strategy(aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationStrategy configuration_strategy) {
-    fbb_.AddElement<int8_t>(AudioSetSubConfiguration::VT_CONFIGURATION_STRATEGY, static_cast<int8_t>(configuration_strategy), 0);
   }
   void add_codec_id(const aidl::android::hardware::bluetooth::audio::le_audio::CodecId *codec_id) {
     fbb_.AddStruct(AudioSetSubConfiguration::VT_CODEC_ID, codec_id);
@@ -442,37 +434,33 @@ struct AudioSetSubConfigurationBuilder {
 
 inline flatbuffers::Offset<AudioSetSubConfiguration> CreateAudioSetSubConfiguration(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint8_t device_cnt = 0,
+    uint8_t ase_channel_cnt = 0,
     uint8_t ase_cnt = 0,
     aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection direction = aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection_SINK,
-    aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationStrategy configuration_strategy = aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationStrategy_MONO_ONE_CIS_PER_DEVICE,
     const aidl::android::hardware::bluetooth::audio::le_audio::CodecId *codec_id = nullptr,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>>> codec_configuration = 0) {
   AudioSetSubConfigurationBuilder builder_(_fbb);
   builder_.add_codec_configuration(codec_configuration);
   builder_.add_codec_id(codec_id);
-  builder_.add_configuration_strategy(configuration_strategy);
   builder_.add_direction(direction);
   builder_.add_ase_cnt(ase_cnt);
-  builder_.add_device_cnt(device_cnt);
+  builder_.add_ase_channel_cnt(ase_channel_cnt);
   return builder_.Finish();
 }
 
 inline flatbuffers::Offset<AudioSetSubConfiguration> CreateAudioSetSubConfigurationDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint8_t device_cnt = 0,
+    uint8_t ase_channel_cnt = 0,
     uint8_t ase_cnt = 0,
     aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection direction = aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection_SINK,
-    aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationStrategy configuration_strategy = aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationStrategy_MONO_ONE_CIS_PER_DEVICE,
     const aidl::android::hardware::bluetooth::audio::le_audio::CodecId *codec_id = nullptr,
     std::vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>> *codec_configuration = nullptr) {
   auto codec_configuration__ = codec_configuration ? _fbb.CreateVectorOfSortedTables<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>(codec_configuration) : 0;
   return aidl::android::hardware::bluetooth::audio::le_audio::CreateAudioSetSubConfiguration(
       _fbb,
-      device_cnt,
+      ase_channel_cnt,
       ase_cnt,
       direction,
-      configuration_strategy,
       codec_id,
       codec_configuration__);
 }

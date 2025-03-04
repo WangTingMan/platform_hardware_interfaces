@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <bitset>
 #include <optional>
 #include <set>
 

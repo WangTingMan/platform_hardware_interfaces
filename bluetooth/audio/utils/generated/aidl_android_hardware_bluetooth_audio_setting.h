@@ -18,7 +18,6 @@
 #include "aidl_android_hardware_bluetooth_audio_setting_enums.h"
 
 #include <aidl_session/LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h>
-
 #define AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS
 
 namespace aidl {
@@ -173,8 +172,9 @@ namespace aidl {
                             const std::optional<AudioLocation> audioLocation_;
                             const std::optional<unsigned char> connectedDevice_;
                             const std::optional<unsigned char> channelCount_;
+                            const std::optional<int> audioChannelAllocation_;
                             public:
-                            StrategyConfiguration(std::optional<std::string> name, std::optional<AudioLocation> audioLocation, std::optional<unsigned char> connectedDevice, std::optional<unsigned char> channelCount);
+                            StrategyConfiguration(std::optional<std::string> name, std::optional<AudioLocation> audioLocation, std::optional<unsigned char> connectedDevice, std::optional<unsigned char> channelCount, std::optional<int> audioChannelAllocation);
                             const std::string& getName() const;
                             bool hasName() const;
                             const AudioLocation& getAudioLocation() const;
@@ -183,6 +183,8 @@ namespace aidl {
                             bool hasConnectedDevice() const;
                             const unsigned char& getChannelCount() const;
                             bool hasChannelCount() const;
+                            const int& getAudioChannelAllocation() const;
+                            bool hasAudioChannelAllocation() const;
                             static StrategyConfiguration read(xmlNode *root);
                         };
 
