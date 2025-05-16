@@ -20,6 +20,8 @@
 #include <aidl/android/hardware/audio/core/BnBluetoothA2dp.h>
 #include <aidl/android/hardware/audio/core/BnBluetoothLe.h>
 
+#include "libaudioserviceexampleiml_exports.h"
+
 namespace aidl::android::hardware::audio::core {
 
 class ParamChangeHandler {
@@ -31,7 +33,7 @@ class ParamChangeHandler {
     std::function<ndk::ScopedAStatus()> mHandler = nullptr;
 };
 
-class Bluetooth : public BnBluetooth {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API Bluetooth : public BnBluetooth {
   public:
     Bluetooth();
 
@@ -43,7 +45,7 @@ class Bluetooth : public BnBluetooth {
     HfpConfig mHfpConfig;
 };
 
-class BluetoothA2dp : public BnBluetoothA2dp, public ParamChangeHandler {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API BluetoothA2dp : public BnBluetoothA2dp, public ParamChangeHandler {
   public:
     BluetoothA2dp() = default;
     ndk::ScopedAStatus isEnabled(bool* _aidl_return) override;
@@ -58,7 +60,7 @@ class BluetoothA2dp : public BnBluetoothA2dp, public ParamChangeHandler {
     bool mEnabled = false;
 };
 
-class BluetoothLe : public BnBluetoothLe, public ParamChangeHandler {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API BluetoothLe : public BnBluetoothLe, public ParamChangeHandler {
   public:
     BluetoothLe() = default;
     ndk::ScopedAStatus isEnabled(bool* _aidl_return) override;

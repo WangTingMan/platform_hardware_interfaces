@@ -19,6 +19,10 @@
 
 #include "core-impl/Bluetooth.h"
 
+#ifndef __unused
+#define __unused
+#endif
+
 using aidl::android::hardware::audio::core::VendorParameter;
 using aidl::android::media::audio::common::Boolean;
 using aidl::android::media::audio::common::Float;

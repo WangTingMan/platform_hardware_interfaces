@@ -19,9 +19,17 @@
 #define LOG_TAG "AHAL_StreamBluetooth"
 #include <Utils.h>
 #include <android-base/logging.h>
-#include <audio_utils/clock.h>
 
 #include "core-impl/StreamBluetooth.h"
+
+#define DO_NOT_DEFINE_TIME_VAL
+#include <audio_utils/clock.h>
+
+#ifdef ERROR
+#undef ERROR
+#endif
+
+#define __unused
 
 using aidl::android::hardware::audio::common::SinkMetadata;
 using aidl::android::hardware::audio::common::SourceMetadata;
@@ -55,7 +63,11 @@ StreamBluetooth::StreamBluetooth(StreamContext* context, const Metadata& metadat
                                  const std::shared_ptr<BluetoothAudioPortAidl>& btDeviceProxy,
                                  const PcmConfiguration& pcmConfig)
     : StreamCommonImpl(context, metadata),
+#ifdef _MSC_VER
+      mFrameSizeBytes(10),
+#else
       mFrameSizeBytes(getContext().getFrameSize()),
+#endif
       mIsInput(isInput(metadata)),
       mBluetoothA2dp(std::move(std::get<ModuleBluetooth::BtInterface::BTA2DP>(btHandles))),
       mBluetoothLe(std::move(std::get<ModuleBluetooth::BtInterface::BTLE>(btHandles))),

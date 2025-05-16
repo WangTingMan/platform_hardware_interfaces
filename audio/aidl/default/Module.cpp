@@ -34,6 +34,12 @@
 #include "core-impl/SoundDose.h"
 #include "core-impl/utils.h"
 
+#ifdef ERROR
+#undef ERROR
+#endif
+
+#define __unused
+
 using aidl::android::hardware::audio::common::frameCountFromDurationMs;
 using aidl::android::hardware::audio::common::getFrameSizeInBytes;
 using aidl::android::hardware::audio::common::hasMmapFlag;
@@ -114,12 +120,14 @@ std::shared_ptr<Module> Module::createInstance(Type type, std::unique_ptr<Config
     switch (type) {
         case Type::DEFAULT:
             return ndk::SharedRefBase::make<ModulePrimary>(std::move(config));
+#ifndef _MSC_VER
         case Type::R_SUBMIX:
             return ndk::SharedRefBase::make<ModuleRemoteSubmix>(std::move(config));
         case Type::STUB:
             return ndk::SharedRefBase::make<ModuleStub>(std::move(config));
         case Type::USB:
             return ndk::SharedRefBase::make<ModuleUsb>(std::move(config));
+#endif
         case Type::BLUETOOTH:
             return ndk::SharedRefBase::make<ModuleBluetooth>(std::move(config));
     }
@@ -164,6 +172,52 @@ std::ostream& operator<<(std::ostream& os, Module::Type t) {
 Module::Module(Type type, std::unique_ptr<Configuration>&& config)
     : mType(type), mConfig(std::move(config)) {
     populateConnectedProfiles();
+#ifdef _MSC_VER
+    using namespace std::placeholders;
+    m_setModuleDebug = std::bind(&Module::setModuleDebug, this, _1);
+    m_getTelephony = std::bind(&Module::getTelephony, this, _1);
+    m_getBluetooth = std::bind(&Module::getBluetooth, this, _1);
+    m_getBluetoothA2dp = std::bind(&Module::getBluetoothA2dp, this, _1);
+    m_getBluetoothLe = std::bind(&Module::getBluetoothLe, this, _1);
+    m_connectExternalDevice = std::bind(&Module::connectExternalDevice, this, _1, _2);
+    m_disconnectExternalDevice = std::bind(&Module::disconnectExternalDevice, this, _1);
+    m_getAudioPatches = std::bind(&Module::getAudioPatches, this, _1);
+    m_getAudioPort = std::bind(&Module::getAudioPort, this, _1, _2);
+    m_getAudioPortConfigs = std::bind(&Module::getAudioPortConfigs, this, _1);
+    m_getAudioPorts = std::bind(&Module::getAudioPorts, this, _1);
+    m_getAudioRoutes = std::bind(&Module::getAudioRoutes, this, _1);
+    m_getAudioRoutesForAudioPort = std::bind(&Module::getAudioRoutesForAudioPort, this, _1, _2);
+    m_openInputStream = std::bind(&Module::openInputStream, this, _1, _2);
+    m_openOutputStream = std::bind(&Module::openOutputStream, this, _1, _2);
+    m_getSupportedPlaybackRateFactors = std::bind(&Module::getSupportedPlaybackRateFactors, this, _1);
+    m_setAudioPatch = std::bind(&Module::setAudioPatch, this, _1, _2);
+    m_setAudioPortConfig = std::bind(&Module::setAudioPortConfig, this, _1, _2, _3);
+    m_resetAudioPatch = std::bind(&Module::resetAudioPatch, this, _1);
+    m_resetAudioPortConfig = std::bind(&Module::resetAudioPortConfig, this, _1);
+    //m_getMasterMute = std::bind(&Module::getMasterMute, this, _1);
+    m_setMasterMute = std::bind(&Module::setMasterMute, this, _1);
+    //m_getMasterVolume = std::bind(&Module::getMasterVolume, this, _1);
+    m_setMasterVolume = std::bind(&Module::setMasterVolume, this, _1);
+    //m_getMicMute = std::bind(&Module::getMicMute, this, _1);
+    m_setMicMute = std::bind(&Module::setMicMute, this, _1);
+    m_getMicrophones = std::bind(&Module::getMicrophones, this, _1);
+    m_updateAudioMode = std::bind(&Module::updateAudioMode, this, _1);
+    m_updateScreenRotation = std::bind(&Module::updateScreenRotation, this, _1);
+    m_updateScreenState = std::bind(&Module::updateScreenState, this, _1);
+    m_getSoundDose = std::bind(&Module::getSoundDose, this, _1);
+    m_generateHwAvSyncId = std::bind(&Module::generateHwAvSyncId, this, _1);
+    m_getVendorParameters = std::bind(&Module::getVendorParameters, this, _1, _2);
+    m_setVendorParameters = std::bind(&Module::setVendorParameters, this, _1, _2);
+    m_addDeviceEffect = std::bind(&Module::addDeviceEffect, this, _1, _2);
+    m_removeDeviceEffect = std::bind(&Module::removeDeviceEffect, this, _1, _2);
+    m_getMmapPolicyInfos = std::bind(&Module::getMmapPolicyInfos, this, _1, _2);
+    m_supportsVariableLatency = std::bind(&Module::supportsVariableLatency, this, _1);
+    m_getAAudioMixerBurstCount = std::bind(&Module::getAAudioMixerBurstCount, this, _1);
+    m_getAAudioHardwareBurstMinUsec = std::bind(&Module::getAAudioHardwareBurstMinUsec, this, _1);
+    m_prepareToDisconnectExternalDevice = std::bind(&Module::prepareToDisconnectExternalDevice, this, _1);
+    m_getInterfaceVersion = std::bind(&Module::getInterfaceVersion, this, _1);
+    m_getInterfaceHash = std::bind(&Module::getInterfaceHash, this, _1);
+#endif // _MSC_VER
 }
 
 void Module::cleanUpPatch(int32_t patchId) {
@@ -210,6 +264,7 @@ ndk::ScopedAStatus Module::createStreamContext(
                    << kMaximumStreamBufferSizeBytes / frameSize;
         return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
     }
+#ifndef _MSC_VER
     const auto& flags = portConfigIt->flags.value();
     StreamContext::DebugParameters params{
             mDebug.streamTransientStateDelayMs, mVendorDebug.forceTransientBurst,
@@ -237,6 +292,7 @@ ndk::ScopedAStatus Module::createStreamContext(
     } else {
         return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
     }
+#endif
     return ndk::ScopedAStatus::ok();
 }
 
@@ -351,8 +407,10 @@ void Module::populateConnectedProfiles() {
                 !devicePort.device.type.connection.empty() && port.profiles.empty()) {
                 if (auto connIt = config.connectedProfiles.find(port.id);
                     connIt == config.connectedProfiles.end()) {
+#ifndef _MSC_VER
                     config.connectedProfiles.emplace(
                             port.id, internal::getStandard16And24BitPcmAudioProfiles());
+#endif
                 }
             }
         }
@@ -373,7 +431,11 @@ std::set<int32_t> Module::portIdsFromPortConfigIds(C portConfigIds) {
 }
 
 std::unique_ptr<Module::Configuration> Module::initializeConfig() {
+#ifdef _MSC_VER
+    return nullptr;
+#else
     return internal::getConfiguration(getType());
+#endif
 }
 
 int32_t Module::getNominalLatencyMs(const AudioPortConfig&) {
@@ -964,6 +1026,7 @@ ndk::ScopedAStatus Module::openInputStream(const OpenInputStreamArguments& in_ar
                    << " does not correspond to an input mix port";
         return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
     }
+#ifndef _MSC_VER
     StreamContext context;
     RETURN_STATUS_IF_ERROR(createStreamContext(in_args.portConfigId, in_args.bufferSizeFrames,
                                                nullptr, nullptr, &context));
@@ -984,6 +1047,7 @@ ndk::ScopedAStatus Module::openInputStream(const OpenInputStreamArguments& in_ar
     AIBinder_setInheritRt(streamBinder.get(), true);
     mStreams.insert(port->id, in_args.portConfigId, std::move(streamWrapper));
     _aidl_return->stream = std::move(stream);
+#endif
     return ndk::ScopedAStatus::ok();
 }
 
@@ -1013,6 +1077,7 @@ ndk::ScopedAStatus Module::openOutputStream(const OpenOutputStreamArguments& in_
                    << " has NON_BLOCKING flag set, requires async callback";
         return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
     }
+#ifndef _MSC_VER
     StreamContext context;
     RETURN_STATUS_IF_ERROR(createStreamContext(in_args.portConfigId, in_args.bufferSizeFrames,
                                                isNonBlocking ? in_args.callback : nullptr,
@@ -1034,6 +1099,7 @@ ndk::ScopedAStatus Module::openOutputStream(const OpenOutputStreamArguments& in_
     AIBinder_setInheritRt(streamBinder.get(), true);
     mStreams.insert(port->id, in_args.portConfigId, std::move(streamWrapper));
     _aidl_return->stream = std::move(stream);
+#endif
     return ndk::ScopedAStatus::ok();
 }
 

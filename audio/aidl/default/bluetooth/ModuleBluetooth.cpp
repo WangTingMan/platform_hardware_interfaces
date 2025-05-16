@@ -22,6 +22,12 @@
 #include "core-impl/ModuleBluetooth.h"
 #include "core-impl/StreamBluetooth.h"
 
+#ifdef ERROR
+#undef ERROR
+#endif
+
+#define __unused
+
 using aidl::android::hardware::audio::common::SinkMetadata;
 using aidl::android::hardware::audio::common::SourceMetadata;
 using aidl::android::hardware::bluetooth::audio::ChannelMode;
@@ -84,11 +90,13 @@ ModuleBluetooth::ModuleBluetooth(std::unique_ptr<Module::Configuration>&& config
     : Module(Type::BLUETOOTH, std::move(config)) {
     // TODO(b/312265159) bluetooth audio should be in its own process
     // Remove this and the shared_libs when that happens
+#ifndef _MSC_VER
     binder_status_t status = createIBluetoothAudioProviderFactory();
     if (status != STATUS_OK) {
         LOG(ERROR) << "Failed to create bluetooth audio provider factory. Status: "
                    << ::android::statusToString(status);
     }
+#endif
 }
 
 ndk::ScopedAStatus ModuleBluetooth::getBluetoothA2dp(

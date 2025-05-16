@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#ifdef _MSC_VER
+#else
 #include <pthread.h>
 #include <sched.h>
 #include <sys/resource.h>
+#endif
 
 #include "include/StreamWorker.h"
 
@@ -94,10 +97,12 @@ void ThreadController::workerThread() {
         }
     }
     if (error.empty() && mThreadPriority != ANDROID_PRIORITY_DEFAULT) {
+#ifndef _MSC_VER
         if (int result = setpriority(PRIO_PROCESS, 0, mThreadPriority); result != 0) {
             int errCode = errno;
             error.append("Failed to set thread priority: ").append(strerror(errCode));
         }
+#endif
     }
     if (error.empty()) {
         error.append(mLogic->init());
@@ -115,9 +120,23 @@ void ThreadController::workerThread() {
 
     for (WorkerState state = WorkerState::RUNNING; state != WorkerState::STOPPED;) {
         bool needToNotify = false;
+#ifdef _MSC_VER
+        Status status;
+        if (state != WorkerState::PAUSED)
+        {
+            status = mLogic->cycle();
+        }
+        else
+        {
+            sleep(0);
+            status = Status::CONTINUE;
+        }
+        if(status == Status::CONTINUE) {
+#else
         if (Status status = state != WorkerState::PAUSED ? mLogic->cycle()
                                                          : (sched_yield(), Status::CONTINUE);
             status == Status::CONTINUE) {
+#endif
             {
                 // See https://developer.android.com/training/articles/smp#nonracing
                 android::base::ScopedLockAssertion lock_assertion(mWorkerLock);

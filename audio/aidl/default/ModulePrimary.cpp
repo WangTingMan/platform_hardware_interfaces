@@ -21,8 +21,14 @@
 #include <android-base/logging.h>
 
 #include "core-impl/ModulePrimary.h"
+#ifndef _MSC_VER
 #include "core-impl/StreamPrimary.h"
+#endif
 #include "core-impl/Telephony.h"
+
+#ifdef ERROR
+#undef ERROR
+#endif
 
 using aidl::android::hardware::audio::common::SinkMetadata;
 using aidl::android::hardware::audio::common::SourceMetadata;
@@ -35,7 +41,9 @@ namespace aidl::android::hardware::audio::core {
 
 ndk::ScopedAStatus ModulePrimary::getTelephony(std::shared_ptr<ITelephony>* _aidl_return) {
     if (!mTelephony) {
+#ifndef _MSC_VER
         mTelephony = ndk::SharedRefBase::make<Telephony>();
+#endif
     }
     *_aidl_return = mTelephony.getInstance();
     LOG(DEBUG) << __func__
@@ -47,15 +55,23 @@ ndk::ScopedAStatus ModulePrimary::createInputStream(StreamContext&& context,
                                                     const SinkMetadata& sinkMetadata,
                                                     const std::vector<MicrophoneInfo>& microphones,
                                                     std::shared_ptr<StreamIn>* result) {
+#ifdef _MSC_VER
+    return ndk::ScopedAStatus::ok();
+#else
     return createStreamInstance<StreamInPrimary>(result, std::move(context), sinkMetadata,
                                                  microphones);
+#endif
 }
 
 ndk::ScopedAStatus ModulePrimary::createOutputStream(
         StreamContext&& context, const SourceMetadata& sourceMetadata,
         const std::optional<AudioOffloadInfo>& offloadInfo, std::shared_ptr<StreamOut>* result) {
+#ifdef _MSC_VER
+    return ndk::ScopedAStatus::ok();
+#else
     return createStreamInstance<StreamOutPrimary>(result, std::move(context), sourceMetadata,
                                                   offloadInfo);
+#endif
 }
 
 int32_t ModulePrimary::getNominalLatencyMs(const AudioPortConfig&) {

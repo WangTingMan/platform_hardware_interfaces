@@ -20,13 +20,19 @@
 
 #include <aidl/android/hardware/audio/core/sounddose/ISoundDose.h>
 #include <android-base/logging.h>
+#ifndef _MSC_VER
 #include <media/AidlConversionCppNdk.h>
+#endif
 #include <utils/Timers.h>
 
 using aidl::android::hardware::audio::core::sounddose::ISoundDose;
 using aidl::android::media::audio::common::AudioDevice;
 using aidl::android::media::audio::common::AudioDeviceDescription;
 using aidl::android::media::audio::common::AudioFormatDescription;
+
+#ifdef _MSC_VER
+#define __attribute__(...)
+#endif
 
 namespace aidl::android::hardware::audio::core::sounddose {
 
@@ -78,6 +84,7 @@ void SoundDose::setAudioDevice(const AudioDevice& audioDevice) {
 void SoundDose::startDataProcessor(uint32_t sampleRate, uint32_t channelCount,
                                    const AudioFormatDescription& aidlFormat) {
     ::android::audio_utils::lock_guard l(mMutex);
+#ifndef _MSC_VER
     const auto result = aidl2legacy_AudioFormatDescription_audio_format_t(aidlFormat);
     const audio_format_t format = result.value_or(AUDIO_FORMAT_INVALID);
 
@@ -88,6 +95,7 @@ void SoundDose::startDataProcessor(uint32_t sampleRate, uint32_t channelCount,
     } else {
         mMelProcessor->updateAudioFormat(sampleRate, channelCount, format);
     }
+#endif
 }
 
 void SoundDose::process(const void* buffer, size_t bytes) {

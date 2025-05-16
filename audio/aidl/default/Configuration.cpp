@@ -21,8 +21,9 @@
 #include <aidl/android/media/audio/common/AudioFormatType.h>
 #include <aidl/android/media/audio/common/AudioIoFlags.h>
 #include <aidl/android/media/audio/common/AudioOutputFlags.h>
+#ifndef _MSC_VER
 #include <media/stagefright/foundation/MediaDefs.h>
-
+#endif
 #include "core-impl/Configuration.h"
 
 using aidl::android::hardware::audio::common::makeBitPositionFlagMask;
@@ -561,10 +562,12 @@ std::unique_ptr<Configuration> getStubConfiguration() {
                                                     AudioOutputFlags::COMPRESS_OFFLOAD,
                                                     AudioOutputFlags::NON_BLOCKING}),
                            false, createPortMixExt(1, 1));
+#ifndef _MSC_VER
         compressedOffloadOutMix.profiles.push_back(
                 createProfile(::android::MEDIA_MIMETYPE_AUDIO_MPEG,
                               {AudioChannelLayout::LAYOUT_MONO, AudioChannelLayout::LAYOUT_STEREO},
                               {44100, 48000}));
+#endif
         c.ports.push_back(compressedOffloadOutMix);
 
         AudioPort testInMix =

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <pthread.h>
+#include <cutils/threads.h>
 
 #define ATRACE_TAG ATRACE_TAG_AUDIO
 #define LOG_TAG "AHAL_Stream"

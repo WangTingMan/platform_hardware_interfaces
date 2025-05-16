@@ -48,13 +48,19 @@
 #include "core-impl/SoundDose.h"
 #include "core-impl/utils.h"
 
+#include "libaudioserviceexampleiml_exports.h"
+
+#ifdef IGNORE
+#undef IGNORE
+#endif
+
 namespace aidl::android::hardware::audio::core {
 
 // This class is similar to StreamDescriptor, but unlike
 // the descriptor, it actually owns the objects implementing
 // data exchange: FMQs etc, whereas StreamDescriptor only
 // contains their descriptors.
-class StreamContext {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API StreamContext {
   public:
     typedef ::android::AidlMessageQueue<
             StreamDescriptor::Command,
@@ -169,7 +175,7 @@ class StreamContext {
 };
 
 // This interface provides operations of the stream which are executed on the worker thread.
-struct DriverInterface {
+struct LIBAUDIOSERVICEEXAMPLEIMPL_API DriverInterface {
     virtual ~DriverInterface() = default;
     // All the methods below are called on the worker thread.
     virtual ::android::status_t init() = 0;  // This function is only called once.
@@ -194,7 +200,7 @@ struct DriverInterface {
     virtual void shutdown() = 0;  // This function is only called once.
 };
 
-class StreamWorkerCommonLogic : public ::android::hardware::audio::common::StreamLogic {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API StreamWorkerCommonLogic : public ::android::hardware::audio::common::StreamLogic {
   public:
     bool isClosed() const { return mState == StreamContext::STATE_CLOSED; }
     StreamDescriptor::State setClosed() {
@@ -214,7 +220,8 @@ class StreamWorkerCommonLogic : public ::android::hardware::audio::common::Strea
           mDriver(driver),
           mTransientStateDelayMs(context->getTransientStateDelayMs()) {}
     pid_t getTid() const;
-    std::string init() override;
+    std::string init();
+
     void populateReply(StreamDescriptor::Reply* reply, bool isConnected) const;
     void populateReplyWrongState(StreamDescriptor::Reply* reply,
                                  const StreamDescriptor::Command& command) const;
@@ -271,14 +278,18 @@ class StreamWorkerImpl : public StreamWorkerInterface,
     StreamDescriptor::State setClosed() override { return WorkerImpl::setClosed(); }
     bool start() override {
         // This is an "audio service thread," must have elevated priority.
+#ifdef _MSC_VER
+        return true;
+#else
         return WorkerImpl::start(WorkerImpl::kThreadName, ANDROID_PRIORITY_URGENT_AUDIO);
+#endif
     }
     pid_t getTid() override { return WorkerImpl::getTid(); }
     void join() override { return WorkerImpl::join(); }
     std::string getError() override { return WorkerImpl::getError(); }
 };
 
-class StreamInWorkerLogic : public StreamWorkerCommonLogic {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API StreamInWorkerLogic : public StreamWorkerCommonLogic {
   public:
     static const std::string kThreadName;
     StreamInWorkerLogic(StreamContext* context, DriverInterface* driver)
@@ -292,7 +303,7 @@ class StreamInWorkerLogic : public StreamWorkerCommonLogic {
 };
 using StreamInWorker = StreamWorkerImpl<StreamInWorkerLogic>;
 
-class StreamOutWorkerLogic : public StreamWorkerCommonLogic {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API StreamOutWorkerLogic : public StreamWorkerCommonLogic {
   public:
     static const std::string kThreadName;
     StreamOutWorkerLogic(StreamContext* context, DriverInterface* driver)
@@ -419,12 +430,12 @@ class StreamCommonDelegator : public BnStreamCommon {
 // Note that StreamCommonImpl does not own the context. This is to support swapping on the fly
 // implementations of the stream while keeping the same IStreamIn/Out instance. It's that instance
 // who must be owner of the context.
-class StreamCommonImpl : virtual public StreamCommonInterface, virtual public DriverInterface {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API StreamCommonImpl : virtual public StreamCommonInterface, virtual public DriverInterface {
   public:
-    StreamCommonImpl(StreamContext* context, const Metadata& metadata,
+      StreamCommonImpl(StreamContext* context, const Metadata& metadata,
                      const StreamWorkerInterface::CreateInstance& createWorker)
         : mContext(*context), mMetadata(metadata), mWorker(createWorker(context, this)) {}
-    StreamCommonImpl(StreamContext* context, const Metadata& metadata)
+      StreamCommonImpl(StreamContext* context, const Metadata& metadata)
         : StreamCommonImpl(
                   context, metadata,
                   isInput(metadata) ? getDefaultInWorkerCreator() : getDefaultOutWorkerCreator()) {}
@@ -490,7 +501,7 @@ class StreamCommonImpl : virtual public StreamCommonInterface, virtual public Dr
 
 // Note: 'StreamIn/Out' can not be used on their own. Instead, they must be used for defining
 // concrete input/output stream implementations.
-class StreamIn : virtual public StreamCommonInterface, public BnStreamIn {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API StreamIn : virtual public StreamCommonInterface, public BnStreamIn {
   protected:
     void defaultOnClose();
 
@@ -520,7 +531,7 @@ class StreamIn : virtual public StreamCommonInterface, public BnStreamIn {
     const std::map<::aidl::android::media::audio::common::AudioDevice, std::string> mMicrophones;
 };
 
-class StreamInHwGainHelper {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API StreamInHwGainHelper {
   protected:
     explicit StreamInHwGainHelper(const StreamContext* context);
 
@@ -531,7 +542,7 @@ class StreamInHwGainHelper {
     std::vector<float> mHwGains;
 };
 
-class StreamOut : virtual public StreamCommonInterface, public BnStreamOut {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API StreamOut : virtual public StreamCommonInterface, public BnStreamOut {
   protected:
     void defaultOnClose();
 
@@ -577,7 +588,7 @@ class StreamOut : virtual public StreamCommonInterface, public BnStreamOut {
     std::optional<::aidl::android::hardware::audio::common::AudioOffloadMetadata> mOffloadMetadata;
 };
 
-class StreamOutHwVolumeHelper {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API StreamOutHwVolumeHelper {
   protected:
     explicit StreamOutHwVolumeHelper(const StreamContext* context);
 

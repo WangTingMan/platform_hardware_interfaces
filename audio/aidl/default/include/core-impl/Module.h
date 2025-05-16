@@ -23,15 +23,17 @@
 #include <optional>
 #include <set>
 
-#include <Utils.h>
+#include <core-impl/utils.h>
 #include <aidl/android/hardware/audio/core/BnModule.h>
 
 #include "core-impl/ChildInterface.h"
 #include "core-impl/Stream.h"
 
+#include <libaudioserviceexampleiml_exports.h>
+
 namespace aidl::android::hardware::audio::core {
 
-class Module : public BnModule {
+class LIBAUDIOSERVICEEXAMPLEIMPL_API Module : public BnModule {
   public:
     struct Configuration {
         std::vector<::aidl::android::media::audio::common::AudioPort> ports;

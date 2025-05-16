@@ -23,6 +23,8 @@
 #include <android/binder_ibinder_platform.h>
 #include <system/thread_defs.h>
 
+#define SCHED_NORMAL 0 
+
 namespace aidl::android::hardware::audio::core {
 
 // Helper used for interfaces that require a persistent instance. We hold them via a strong

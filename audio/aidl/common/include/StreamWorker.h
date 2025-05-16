@@ -27,13 +27,17 @@
 #include <android-base/thread_annotations.h>
 #include <system/thread_defs.h>
 
+#include <cutils/threads.h>
+
+#include "libaudioaidlcommon_export_.h"
+
 namespace android::hardware::audio::common {
 
 class StreamLogic;
 
 namespace internal {
 
-class ThreadController {
+class LIBAUDIOAIDLCOMMON_API ThreadController {
     enum class WorkerState { INITIAL, STOPPED, RUNNING, PAUSE_REQUESTED, PAUSED, RESUME_REQUESTED };
 
   public:
@@ -102,7 +106,7 @@ static const std::string kTestSingleThread = "__testST__";
 
 }  // namespace internal
 
-class StreamLogic {
+class LIBAUDIOAIDLCOMMON_API StreamLogic {
   public:
     friend class internal::ThreadController;
 
@@ -116,7 +120,7 @@ class StreamLogic {
      * exits and the worker switches into the 'error' state, setting
      * the error to the returned value.
      */
-    virtual std::string init() = 0;
+    virtual std::string init() { return ""; };
 
     /* Called for each thread loop unless the thread is in 'paused' state.
      * Must return 'CONTINUE' to continue running, otherwise the thread loop
@@ -126,7 +130,7 @@ class StreamLogic {
      * status is equivalent to calling 'stop()' method. This is just a way of
      * of stopping the worker by its own initiative.
      */
-    virtual Status cycle() = 0;
+    virtual Status cycle() { return Status::CONTINUE; };
 };
 
 template <class LogicImpl>

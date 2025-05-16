@@ -33,6 +33,11 @@
 #include <android/binder_auto_utils.h>
 #include <utils/FastStrcmp.h>
 
+#ifdef _MSC_VER
+#  include <intrin.h>
+#  define __builtin_popcount __popcnt
+#endif
+
 namespace ndk {
 
 // This enables use of 'error/expected_utils' for ScopedAStatus.
@@ -86,7 +91,7 @@ constexpr size_t getPcmSampleSizeInBytes(::aidl::android::media::audio::common::
     return 0;
 }
 
-constexpr size_t getChannelCount(
+inline size_t getChannelCount(
         const ::aidl::android::media::audio::common::AudioChannelLayout& layout,
         int32_t mask = std::numeric_limits<int32_t>::max()) {
     using Tag = ::aidl::android::media::audio::common::AudioChannelLayout::Tag;
@@ -105,7 +110,7 @@ constexpr size_t getChannelCount(
     return 0;
 }
 
-constexpr size_t getFrameSizeInBytes(
+inline size_t getFrameSizeInBytes(
         const ::aidl::android::media::audio::common::AudioFormatDescription& format,
         const ::aidl::android::media::audio::common::AudioChannelLayout& layout) {
     if (format == ::aidl::android::media::audio::common::AudioFormatDescription{}) {
@@ -198,7 +203,7 @@ constexpr int32_t frameCountFromDurationMs(int32_t durationMs, int32_t sampleRat
     return frameCountFromDurationUs(durationMs * 1000, sampleRateHz);
 }
 
-constexpr bool hasMmapFlag(const ::aidl::android::media::audio::common::AudioIoFlags& flags) {
+inline bool hasMmapFlag(const ::aidl::android::media::audio::common::AudioIoFlags& flags) {
     return (flags.getTag() == ::aidl::android::media::audio::common::AudioIoFlags::Tag::input &&
             isBitPositionFlagSet(
                     flags.get<::aidl::android::media::audio::common::AudioIoFlags::Tag::input>(),
