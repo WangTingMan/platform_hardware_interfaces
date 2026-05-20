@@ -16,7 +16,6 @@
 #endif
 
 #include "aidl_android_hardware_bluetooth_audio_setting_enums.h"
-
 #include <aidl_session/LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS_.h>
 #define AIDL_ANDROID_HARDWARE_BLUETOOTH_AUDIO_API_EXPORTS LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS
 

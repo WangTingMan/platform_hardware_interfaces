@@ -5,7 +5,7 @@
 #ifndef __BIONIC__
 #define __assert2(f,n,fun,e) do { fprintf(stderr, "%s:%d: %s: Assertion `%s' failed", (f), (n), (fun), (e)); abort(); } while (false)
 #endif
-#define _xsdc_assert(e) do if (!(e)) __assert2(__FILE__, __LINE__, __FUNCTION__, #e); while (false)
+#define _xsdc_assert(e) do if (!(e)) __assert2(__FILE__, __LINE__, __PRETTY_FUNCTION__, #e); while (false)
 
 namespace aidl {
     namespace android {

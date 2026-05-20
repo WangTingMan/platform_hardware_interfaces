@@ -8,9 +8,9 @@
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 2 &&
-              FLATBUFFERS_VERSION_MINOR == 0 &&
-              FLATBUFFERS_VERSION_REVISION == 7,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 25 &&
+              FLATBUFFERS_VERSION_MINOR == 1 &&
+              FLATBUFFERS_VERSION_REVISION == 24,
              "Non-compatible flatbuffers version included");
 
 namespace aidl {
@@ -35,29 +35,35 @@ struct AudioSetScenariosBuilder;
 /// The referenced codec configurations are defined by the
 /// audio_set_configurations.fbs schema and loaded from a different source file.
 /// Multiple scenarios can reference same codec configurations.
-struct AudioSetScenario FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct AudioSetScenario FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef AudioSetScenarioBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT__COMMENTS_ = 4,
     VT_NAME = 6,
     VT_CONFIGURATIONS = 8
   };
-  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *_comments_() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT__COMMENTS_);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *_comments_() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *>(VT__COMMENTS_);
   }
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  bool KeyCompareLessThan(const AudioSetScenario *o) const {
+  bool KeyCompareLessThan(const AudioSetScenario * const o) const {
     return *name() < *o->name();
   }
   int KeyCompareWithValue(const char *_name) const {
     return strcmp(name()->c_str(), _name);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *configurations() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONFIGURATIONS);
+  template<typename StringType>
+  int KeyCompareWithValue(const StringType& _name) const {
+    if (name()->c_str() < _name) return -1;
+    if (_name < name()->c_str()) return 1;
+    return 0;
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *configurations() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *>(VT_CONFIGURATIONS);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT__COMMENTS_) &&
            verifier.VerifyVector(_comments_()) &&
@@ -73,35 +79,35 @@ struct AudioSetScenario FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct AudioSetScenarioBuilder {
   typedef AudioSetScenario Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add__comments_(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> _comments_) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add__comments_(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> _comments_) {
     fbb_.AddOffset(AudioSetScenario::VT__COMMENTS_, _comments_);
   }
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(AudioSetScenario::VT_NAME, name);
   }
-  void add_configurations(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> configurations) {
+  void add_configurations(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> configurations) {
     fbb_.AddOffset(AudioSetScenario::VT_CONFIGURATIONS, configurations);
   }
-  explicit AudioSetScenarioBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit AudioSetScenarioBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<AudioSetScenario> Finish() {
+  ::flatbuffers::Offset<AudioSetScenario> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<AudioSetScenario>(end);
+    auto o = ::flatbuffers::Offset<AudioSetScenario>(end);
     fbb_.Required(o, AudioSetScenario::VT_NAME);
     fbb_.Required(o, AudioSetScenario::VT_CONFIGURATIONS);
     return o;
   }
 };
 
-inline flatbuffers::Offset<AudioSetScenario> CreateAudioSetScenario(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> _comments_ = 0,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> configurations = 0) {
+inline ::flatbuffers::Offset<AudioSetScenario> CreateAudioSetScenario(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> _comments_ = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> configurations = 0) {
   AudioSetScenarioBuilder builder_(_fbb);
   builder_.add_configurations(configurations);
   builder_.add_name(name);
@@ -109,14 +115,14 @@ inline flatbuffers::Offset<AudioSetScenario> CreateAudioSetScenario(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<AudioSetScenario> CreateAudioSetScenarioDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<flatbuffers::String>> *_comments_ = nullptr,
+inline ::flatbuffers::Offset<AudioSetScenario> CreateAudioSetScenarioDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *_comments_ = nullptr,
     const char *name = nullptr,
-    const std::vector<flatbuffers::Offset<flatbuffers::String>> *configurations = nullptr) {
-  auto _comments___ = _comments_ ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*_comments_) : 0;
+    const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *configurations = nullptr) {
+  auto _comments___ = _comments_ ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*_comments_) : 0;
   auto name__ = name ? _fbb.CreateString(name) : 0;
-  auto configurations__ = configurations ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*configurations) : 0;
+  auto configurations__ = configurations ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*configurations) : 0;
   return aidl::android::hardware::bluetooth::audio::le_audio::CreateAudioSetScenario(
       _fbb,
       _comments___,
@@ -124,19 +130,19 @@ inline flatbuffers::Offset<AudioSetScenario> CreateAudioSetScenarioDirect(
       configurations__);
 }
 
-struct AudioSetScenarios FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct AudioSetScenarios FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef AudioSetScenariosBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT__COMMENTS_ = 4,
     VT_SCENARIOS = 6
   };
-  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *_comments_() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT__COMMENTS_);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *_comments_() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *>(VT__COMMENTS_);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>> *scenarios() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>> *>(VT_SCENARIOS);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>> *scenarios() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>> *>(VT_SCENARIOS);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT__COMMENTS_) &&
            verifier.VerifyVector(_comments_()) &&
@@ -150,41 +156,41 @@ struct AudioSetScenarios FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct AudioSetScenariosBuilder {
   typedef AudioSetScenarios Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add__comments_(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> _comments_) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add__comments_(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> _comments_) {
     fbb_.AddOffset(AudioSetScenarios::VT__COMMENTS_, _comments_);
   }
-  void add_scenarios(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>>> scenarios) {
+  void add_scenarios(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>>> scenarios) {
     fbb_.AddOffset(AudioSetScenarios::VT_SCENARIOS, scenarios);
   }
-  explicit AudioSetScenariosBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit AudioSetScenariosBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<AudioSetScenarios> Finish() {
+  ::flatbuffers::Offset<AudioSetScenarios> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<AudioSetScenarios>(end);
+    auto o = ::flatbuffers::Offset<AudioSetScenarios>(end);
     fbb_.Required(o, AudioSetScenarios::VT_SCENARIOS);
     return o;
   }
 };
 
-inline flatbuffers::Offset<AudioSetScenarios> CreateAudioSetScenarios(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> _comments_ = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>>> scenarios = 0) {
+inline ::flatbuffers::Offset<AudioSetScenarios> CreateAudioSetScenarios(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> _comments_ = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>>> scenarios = 0) {
   AudioSetScenariosBuilder builder_(_fbb);
   builder_.add_scenarios(scenarios);
   builder_.add__comments_(_comments_);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<AudioSetScenarios> CreateAudioSetScenariosDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<flatbuffers::String>> *_comments_ = nullptr,
-    std::vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>> *scenarios = nullptr) {
-  auto _comments___ = _comments_ ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*_comments_) : 0;
+inline ::flatbuffers::Offset<AudioSetScenarios> CreateAudioSetScenariosDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *_comments_ = nullptr,
+    std::vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>> *scenarios = nullptr) {
+  auto _comments___ = _comments_ ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*_comments_) : 0;
   auto scenarios__ = scenarios ? _fbb.CreateVectorOfSortedTables<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenario>(scenarios) : 0;
   return aidl::android::hardware::bluetooth::audio::le_audio::CreateAudioSetScenarios(
       _fbb,
@@ -193,32 +199,32 @@ inline flatbuffers::Offset<AudioSetScenarios> CreateAudioSetScenariosDirect(
 }
 
 inline const aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios *GetAudioSetScenarios(const void *buf) {
-  return flatbuffers::GetRoot<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios>(buf);
+  return ::flatbuffers::GetRoot<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios>(buf);
 }
 
 inline const aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios *GetSizePrefixedAudioSetScenarios(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios>(buf);
+  return ::flatbuffers::GetSizePrefixedRoot<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios>(buf);
 }
 
 inline bool VerifyAudioSetScenariosBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios>(nullptr);
 }
 
 inline bool VerifySizePrefixedAudioSetScenariosBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifySizePrefixedBuffer<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios>(nullptr);
 }
 
 inline void FinishAudioSetScenariosBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedAudioSetScenariosBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetScenarios> root) {
   fbb.FinishSizePrefixed(root);
 }
 

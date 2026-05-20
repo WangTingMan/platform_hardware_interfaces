@@ -25,6 +25,7 @@ namespace aidl {
                             LC3,
                             APTX_ADAPTIVE_LE,
                             APTX_ADAPTIVE_LEX,
+                            OPUS,
                         };
                         CodecType stringToCodecType(const std::string& value);
                         std::string toString(CodecType o);
@@ -46,10 +47,11 @@ namespace android {
             ::aidl::android::hardware::bluetooth::audio::setting::AudioLocation::MONO,
             ::aidl::android::hardware::bluetooth::audio::setting::AudioLocation::STEREO,
         };
-        template<> inline constexpr std::array<::aidl::android::hardware::bluetooth::audio::setting::CodecType, 3> xsdc_enum_values<::aidl::android::hardware::bluetooth::audio::setting::CodecType> = {
+        template<> inline constexpr std::array<::aidl::android::hardware::bluetooth::audio::setting::CodecType, 4> xsdc_enum_values<::aidl::android::hardware::bluetooth::audio::setting::CodecType> = {
             ::aidl::android::hardware::bluetooth::audio::setting::CodecType::LC3,
             ::aidl::android::hardware::bluetooth::audio::setting::CodecType::APTX_ADAPTIVE_LE,
             ::aidl::android::hardware::bluetooth::audio::setting::CodecType::APTX_ADAPTIVE_LEX,
+            ::aidl::android::hardware::bluetooth::audio::setting::CodecType::OPUS,
         };
     }  // namespace details
 }  // namespace android

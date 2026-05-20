@@ -8,9 +8,9 @@
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 2 &&
-              FLATBUFFERS_VERSION_MINOR == 0 &&
-              FLATBUFFERS_VERSION_REVISION == 7,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 25 &&
+              FLATBUFFERS_VERSION_MINOR == 1 &&
+              FLATBUFFERS_VERSION_REVISION == 24,
              "Non-compatible flatbuffers version included");
 
 namespace aidl {
@@ -77,7 +77,7 @@ inline const char * const *EnumNamesCodecSpecificLtvGenericTypes() {
 }
 
 inline const char *EnumNameCodecSpecificLtvGenericTypes(CodecSpecificLtvGenericTypes e) {
-  if (flatbuffers::IsOutRange(e, CodecSpecificLtvGenericTypes_SUPPORTED_SAMPLING_FREQUENCY, CodecSpecificLtvGenericTypes_SUPPORTED_CODEC_FRAME_BLOCKS_PER_SDU)) return "";
+  if (::flatbuffers::IsOutRange(e, CodecSpecificLtvGenericTypes_SUPPORTED_SAMPLING_FREQUENCY, CodecSpecificLtvGenericTypes_SUPPORTED_CODEC_FRAME_BLOCKS_PER_SDU)) return "";
   const size_t index = static_cast<size_t>(e) - static_cast<size_t>(CodecSpecificLtvGenericTypes_SUPPORTED_SAMPLING_FREQUENCY);
   return EnumNamesCodecSpecificLtvGenericTypes()[index];
 }
@@ -110,7 +110,7 @@ inline const char * const *EnumNamesAudioSetConfigurationStrategy() {
 }
 
 inline const char *EnumNameAudioSetConfigurationStrategy(AudioSetConfigurationStrategy e) {
-  if (flatbuffers::IsOutRange(e, AudioSetConfigurationStrategy_MONO_ONE_CIS_PER_DEVICE, AudioSetConfigurationStrategy_STEREO_ONE_CIS_PER_DEVICE)) return "";
+  if (::flatbuffers::IsOutRange(e, AudioSetConfigurationStrategy_MONO_ONE_CIS_PER_DEVICE, AudioSetConfigurationStrategy_STEREO_ONE_CIS_PER_DEVICE)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesAudioSetConfigurationStrategy()[index];
 }
@@ -140,7 +140,7 @@ inline const char * const *EnumNamesAudioSetConfigurationDirection() {
 }
 
 inline const char *EnumNameAudioSetConfigurationDirection(AudioSetConfigurationDirection e) {
-  if (flatbuffers::IsOutRange(e, AudioSetConfigurationDirection_SINK, AudioSetConfigurationDirection_SOURCE)) return "";
+  if (::flatbuffers::IsOutRange(e, AudioSetConfigurationDirection_SINK, AudioSetConfigurationDirection_SOURCE)) return "";
   const size_t index = static_cast<size_t>(e) - static_cast<size_t>(AudioSetConfigurationDirection_SINK);
   return EnumNamesAudioSetConfigurationDirection()[index];
 }
@@ -173,7 +173,7 @@ inline const char * const *EnumNamesAudioSetConfigurationTargetLatency() {
 }
 
 inline const char *EnumNameAudioSetConfigurationTargetLatency(AudioSetConfigurationTargetLatency e) {
-  if (flatbuffers::IsOutRange(e, AudioSetConfigurationTargetLatency_LOW, AudioSetConfigurationTargetLatency_HIGH_RELIABILITY)) return "";
+  if (::flatbuffers::IsOutRange(e, AudioSetConfigurationTargetLatency_LOW, AudioSetConfigurationTargetLatency_HIGH_RELIABILITY)) return "";
   const size_t index = static_cast<size_t>(e) - static_cast<size_t>(AudioSetConfigurationTargetLatency_LOW);
   return EnumNamesAudioSetConfigurationTargetLatency()[index];
 }
@@ -194,20 +194,20 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(2) CodecId FLATBUFFERS_FINAL_CLASS {
     (void)padding0__;
   }
   CodecId(uint8_t _coding_format, uint16_t _vendor_company_id, uint16_t _vendor_codec_id)
-      : coding_format_(flatbuffers::EndianScalar(_coding_format)),
+      : coding_format_(::flatbuffers::EndianScalar(_coding_format)),
         padding0__(0),
-        vendor_company_id_(flatbuffers::EndianScalar(_vendor_company_id)),
-        vendor_codec_id_(flatbuffers::EndianScalar(_vendor_codec_id)) {
+        vendor_company_id_(::flatbuffers::EndianScalar(_vendor_company_id)),
+        vendor_codec_id_(::flatbuffers::EndianScalar(_vendor_codec_id)) {
     (void)padding0__;
   }
   uint8_t coding_format() const {
-    return flatbuffers::EndianScalar(coding_format_);
+    return ::flatbuffers::EndianScalar(coding_format_);
   }
   uint16_t vendor_company_id() const {
-    return flatbuffers::EndianScalar(vendor_company_id_);
+    return ::flatbuffers::EndianScalar(vendor_company_id_);
   }
   uint16_t vendor_codec_id() const {
-    return flatbuffers::EndianScalar(vendor_codec_id_);
+    return ::flatbuffers::EndianScalar(vendor_codec_id_);
   }
 };
 FLATBUFFERS_STRUCT_END(CodecId, 6);
@@ -217,19 +217,19 @@ FLATBUFFERS_STRUCT_END(CodecId, 6);
 ///       `value_width`.
 /// Note: Consider extending it with `flags` field, to hold additional info like
 ///       IsBitfield, IsRange, etc. if we need these type-specific validations.
-struct CompoundValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct CompoundValue FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef CompoundValueBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_VALUE = 4,
     VT_VALUE_WIDTH = 6
   };
-  const flatbuffers::Vector<uint8_t> *value() const {
-    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_VALUE);
+  const ::flatbuffers::Vector<uint8_t> *value() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_VALUE);
   }
   uint8_t value_width() const {
     return GetField<uint8_t>(VT_VALUE_WIDTH, 0);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffsetRequired(verifier, VT_VALUE) &&
            verifier.VerifyVector(value()) &&
@@ -240,29 +240,29 @@ struct CompoundValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct CompoundValueBuilder {
   typedef CompoundValue Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_value(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> value) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_value(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> value) {
     fbb_.AddOffset(CompoundValue::VT_VALUE, value);
   }
   void add_value_width(uint8_t value_width) {
     fbb_.AddElement<uint8_t>(CompoundValue::VT_VALUE_WIDTH, value_width, 0);
   }
-  explicit CompoundValueBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit CompoundValueBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<CompoundValue> Finish() {
+  ::flatbuffers::Offset<CompoundValue> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<CompoundValue>(end);
+    auto o = ::flatbuffers::Offset<CompoundValue>(end);
     fbb_.Required(o, CompoundValue::VT_VALUE);
     return o;
   }
 };
 
-inline flatbuffers::Offset<CompoundValue> CreateCompoundValue(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> value = 0,
+inline ::flatbuffers::Offset<CompoundValue> CreateCompoundValue(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> value = 0,
     uint8_t value_width = 0) {
   CompoundValueBuilder builder_(_fbb);
   builder_.add_value(value);
@@ -270,8 +270,8 @@ inline flatbuffers::Offset<CompoundValue> CreateCompoundValue(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<CompoundValue> CreateCompoundValueDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<CompoundValue> CreateCompoundValueDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<uint8_t> *value = nullptr,
     uint8_t value_width = 0) {
   auto value__ = value ? _fbb.CreateVector<uint8_t>(*value) : 0;
@@ -281,20 +281,20 @@ inline flatbuffers::Offset<CompoundValue> CreateCompoundValueDirect(
       value_width);
 }
 
-struct CodecSpecificConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct CodecSpecificConfiguration FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef CodecSpecificConfigurationBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_TYPE = 6,
     VT_COMPOUND_VALUE = 8
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
   uint8_t type() const {
     return GetField<uint8_t>(VT_TYPE, 0);
   }
-  bool KeyCompareLessThan(const CodecSpecificConfiguration *o) const {
+  bool KeyCompareLessThan(const CodecSpecificConfiguration * const o) const {
     return type() < o->type();
   }
   int KeyCompareWithValue(uint8_t _type) const {
@@ -303,7 +303,7 @@ struct CodecSpecificConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers:
   const aidl::android::hardware::bluetooth::audio::le_audio::CompoundValue *compound_value() const {
     return GetPointer<const aidl::android::hardware::bluetooth::audio::le_audio::CompoundValue *>(VT_COMPOUND_VALUE);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -316,33 +316,33 @@ struct CodecSpecificConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers:
 
 struct CodecSpecificConfigurationBuilder {
   typedef CodecSpecificConfiguration Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(CodecSpecificConfiguration::VT_NAME, name);
   }
   void add_type(uint8_t type) {
     fbb_.AddElement<uint8_t>(CodecSpecificConfiguration::VT_TYPE, type, 0);
   }
-  void add_compound_value(flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CompoundValue> compound_value) {
+  void add_compound_value(::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CompoundValue> compound_value) {
     fbb_.AddOffset(CodecSpecificConfiguration::VT_COMPOUND_VALUE, compound_value);
   }
-  explicit CodecSpecificConfigurationBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit CodecSpecificConfigurationBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<CodecSpecificConfiguration> Finish() {
+  ::flatbuffers::Offset<CodecSpecificConfiguration> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<CodecSpecificConfiguration>(end);
+    auto o = ::flatbuffers::Offset<CodecSpecificConfiguration>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<CodecSpecificConfiguration> CreateCodecSpecificConfiguration(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
+inline ::flatbuffers::Offset<CodecSpecificConfiguration> CreateCodecSpecificConfiguration(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
     uint8_t type = 0,
-    flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CompoundValue> compound_value = 0) {
+    ::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CompoundValue> compound_value = 0) {
   CodecSpecificConfigurationBuilder builder_(_fbb);
   builder_.add_compound_value(compound_value);
   builder_.add_name(name);
@@ -350,11 +350,11 @@ inline flatbuffers::Offset<CodecSpecificConfiguration> CreateCodecSpecificConfig
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<CodecSpecificConfiguration> CreateCodecSpecificConfigurationDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<CodecSpecificConfiguration> CreateCodecSpecificConfigurationDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     uint8_t type = 0,
-    flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CompoundValue> compound_value = 0) {
+    ::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CompoundValue> compound_value = 0) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   return aidl::android::hardware::bluetooth::audio::le_audio::CreateCodecSpecificConfiguration(
       _fbb,
@@ -363,7 +363,7 @@ inline flatbuffers::Offset<CodecSpecificConfiguration> CreateCodecSpecificConfig
       compound_value);
 }
 
-struct AudioSetSubConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct AudioSetSubConfiguration FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef AudioSetSubConfigurationBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ASE_CHANNEL_CNT = 4,
@@ -384,10 +384,10 @@ struct AudioSetSubConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::T
   const aidl::android::hardware::bluetooth::audio::le_audio::CodecId *codec_id() const {
     return GetStruct<const aidl::android::hardware::bluetooth::audio::le_audio::CodecId *>(VT_CODEC_ID);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>> *codec_configuration() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>> *>(VT_CODEC_CONFIGURATION);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>> *codec_configuration() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>> *>(VT_CODEC_CONFIGURATION);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_ASE_CHANNEL_CNT, 1) &&
            VerifyField<uint8_t>(verifier, VT_ASE_CNT, 1) &&
@@ -402,8 +402,8 @@ struct AudioSetSubConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::T
 
 struct AudioSetSubConfigurationBuilder {
   typedef AudioSetSubConfiguration Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
   void add_ase_channel_cnt(uint8_t ase_channel_cnt) {
     fbb_.AddElement<uint8_t>(AudioSetSubConfiguration::VT_ASE_CHANNEL_CNT, ase_channel_cnt, 0);
   }
@@ -416,29 +416,29 @@ struct AudioSetSubConfigurationBuilder {
   void add_codec_id(const aidl::android::hardware::bluetooth::audio::le_audio::CodecId *codec_id) {
     fbb_.AddStruct(AudioSetSubConfiguration::VT_CODEC_ID, codec_id);
   }
-  void add_codec_configuration(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>>> codec_configuration) {
+  void add_codec_configuration(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>>> codec_configuration) {
     fbb_.AddOffset(AudioSetSubConfiguration::VT_CODEC_CONFIGURATION, codec_configuration);
   }
-  explicit AudioSetSubConfigurationBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit AudioSetSubConfigurationBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<AudioSetSubConfiguration> Finish() {
+  ::flatbuffers::Offset<AudioSetSubConfiguration> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<AudioSetSubConfiguration>(end);
+    auto o = ::flatbuffers::Offset<AudioSetSubConfiguration>(end);
     fbb_.Required(o, AudioSetSubConfiguration::VT_CODEC_ID);
     fbb_.Required(o, AudioSetSubConfiguration::VT_CODEC_CONFIGURATION);
     return o;
   }
 };
 
-inline flatbuffers::Offset<AudioSetSubConfiguration> CreateAudioSetSubConfiguration(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<AudioSetSubConfiguration> CreateAudioSetSubConfiguration(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     uint8_t ase_channel_cnt = 0,
     uint8_t ase_cnt = 0,
     aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection direction = aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection_SINK,
     const aidl::android::hardware::bluetooth::audio::le_audio::CodecId *codec_id = nullptr,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>>> codec_configuration = 0) {
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>>> codec_configuration = 0) {
   AudioSetSubConfigurationBuilder builder_(_fbb);
   builder_.add_codec_configuration(codec_configuration);
   builder_.add_codec_id(codec_id);
@@ -448,13 +448,13 @@ inline flatbuffers::Offset<AudioSetSubConfiguration> CreateAudioSetSubConfigurat
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<AudioSetSubConfiguration> CreateAudioSetSubConfigurationDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<AudioSetSubConfiguration> CreateAudioSetSubConfigurationDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     uint8_t ase_channel_cnt = 0,
     uint8_t ase_cnt = 0,
     aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection direction = aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationDirection_SINK,
     const aidl::android::hardware::bluetooth::audio::le_audio::CodecId *codec_id = nullptr,
-    std::vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>> *codec_configuration = nullptr) {
+    std::vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>> *codec_configuration = nullptr) {
   auto codec_configuration__ = codec_configuration ? _fbb.CreateVectorOfSortedTables<aidl::android::hardware::bluetooth::audio::le_audio::CodecSpecificConfiguration>(codec_configuration) : 0;
   return aidl::android::hardware::bluetooth::audio::le_audio::CreateAudioSetSubConfiguration(
       _fbb,
@@ -465,25 +465,31 @@ inline flatbuffers::Offset<AudioSetSubConfiguration> CreateAudioSetSubConfigurat
       codec_configuration__);
 }
 
-struct CodecConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct CodecConfiguration FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef CodecConfigurationBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_SUBCONFIGURATIONS = 6
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  bool KeyCompareLessThan(const CodecConfiguration *o) const {
+  bool KeyCompareLessThan(const CodecConfiguration * const o) const {
     return *name() < *o->name();
   }
   int KeyCompareWithValue(const char *_name) const {
     return strcmp(name()->c_str(), _name);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>> *subconfigurations() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>> *>(VT_SUBCONFIGURATIONS);
+  template<typename StringType>
+  int KeyCompareWithValue(const StringType& _name) const {
+    if (name()->c_str() < _name) return -1;
+    if (_name < name()->c_str()) return 1;
+    return 0;
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>> *subconfigurations() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>> *>(VT_SUBCONFIGURATIONS);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffsetRequired(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -496,50 +502,50 @@ struct CodecConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct CodecConfigurationBuilder {
   typedef CodecConfiguration Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(CodecConfiguration::VT_NAME, name);
   }
-  void add_subconfigurations(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>>> subconfigurations) {
+  void add_subconfigurations(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>>> subconfigurations) {
     fbb_.AddOffset(CodecConfiguration::VT_SUBCONFIGURATIONS, subconfigurations);
   }
-  explicit CodecConfigurationBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit CodecConfigurationBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<CodecConfiguration> Finish() {
+  ::flatbuffers::Offset<CodecConfiguration> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<CodecConfiguration>(end);
+    auto o = ::flatbuffers::Offset<CodecConfiguration>(end);
     fbb_.Required(o, CodecConfiguration::VT_NAME);
     fbb_.Required(o, CodecConfiguration::VT_SUBCONFIGURATIONS);
     return o;
   }
 };
 
-inline flatbuffers::Offset<CodecConfiguration> CreateCodecConfiguration(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>>> subconfigurations = 0) {
+inline ::flatbuffers::Offset<CodecConfiguration> CreateCodecConfiguration(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>>> subconfigurations = 0) {
   CodecConfigurationBuilder builder_(_fbb);
   builder_.add_subconfigurations(subconfigurations);
   builder_.add_name(name);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<CodecConfiguration> CreateCodecConfigurationDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<CodecConfiguration> CreateCodecConfigurationDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
-    const std::vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>> *subconfigurations = nullptr) {
+    const std::vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>> *subconfigurations = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
-  auto subconfigurations__ = subconfigurations ? _fbb.CreateVector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>>(*subconfigurations) : 0;
+  auto subconfigurations__ = subconfigurations ? _fbb.CreateVector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetSubConfiguration>>(*subconfigurations) : 0;
   return aidl::android::hardware::bluetooth::audio::le_audio::CreateCodecConfiguration(
       _fbb,
       name__,
       subconfigurations__);
 }
 
-struct QosConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct QosConfiguration FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef QosConfigurationBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
@@ -547,14 +553,20 @@ struct QosConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_RETRANSMISSION_NUMBER = 8,
     VT_MAX_TRANSPORT_LATENCY = 10
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  bool KeyCompareLessThan(const QosConfiguration *o) const {
+  bool KeyCompareLessThan(const QosConfiguration * const o) const {
     return *name() < *o->name();
   }
   int KeyCompareWithValue(const char *_name) const {
     return strcmp(name()->c_str(), _name);
+  }
+  template<typename StringType>
+  int KeyCompareWithValue(const StringType& _name) const {
+    if (name()->c_str() < _name) return -1;
+    if (_name < name()->c_str()) return 1;
+    return 0;
   }
   aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationTargetLatency target_latency() const {
     return static_cast<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationTargetLatency>(GetField<int8_t>(VT_TARGET_LATENCY, 2));
@@ -565,7 +577,7 @@ struct QosConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint16_t max_transport_latency() const {
     return GetField<uint16_t>(VT_MAX_TRANSPORT_LATENCY, 0);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffsetRequired(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -578,9 +590,9 @@ struct QosConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct QosConfigurationBuilder {
   typedef QosConfiguration Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(QosConfiguration::VT_NAME, name);
   }
   void add_target_latency(aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationTargetLatency target_latency) {
@@ -592,21 +604,21 @@ struct QosConfigurationBuilder {
   void add_max_transport_latency(uint16_t max_transport_latency) {
     fbb_.AddElement<uint16_t>(QosConfiguration::VT_MAX_TRANSPORT_LATENCY, max_transport_latency, 0);
   }
-  explicit QosConfigurationBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit QosConfigurationBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<QosConfiguration> Finish() {
+  ::flatbuffers::Offset<QosConfiguration> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<QosConfiguration>(end);
+    auto o = ::flatbuffers::Offset<QosConfiguration>(end);
     fbb_.Required(o, QosConfiguration::VT_NAME);
     return o;
   }
 };
 
-inline flatbuffers::Offset<QosConfiguration> CreateQosConfiguration(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
+inline ::flatbuffers::Offset<QosConfiguration> CreateQosConfiguration(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
     aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationTargetLatency target_latency = aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationTargetLatency_BALANCED_RELIABILITY,
     uint8_t retransmission_number = 0,
     uint16_t max_transport_latency = 0) {
@@ -618,8 +630,8 @@ inline flatbuffers::Offset<QosConfiguration> CreateQosConfiguration(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<QosConfiguration> CreateQosConfigurationDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<QosConfiguration> CreateQosConfigurationDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationTargetLatency target_latency = aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurationTargetLatency_BALANCED_RELIABILITY,
     uint8_t retransmission_number = 0,
@@ -637,29 +649,35 @@ inline flatbuffers::Offset<QosConfiguration> CreateQosConfigurationDirect(
 /// all must be configurable with the current set of audio devices. For example,
 /// one can define multiple output stream configurations with different
 /// qualities, or assign different configurations to each stream direction.
-struct AudioSetConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct AudioSetConfiguration FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef AudioSetConfigurationBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_CODEC_CONFIG_NAME = 6,
     VT_QOS_CONFIG_NAME = 8
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  bool KeyCompareLessThan(const AudioSetConfiguration *o) const {
+  bool KeyCompareLessThan(const AudioSetConfiguration * const o) const {
     return *name() < *o->name();
   }
   int KeyCompareWithValue(const char *_name) const {
     return strcmp(name()->c_str(), _name);
   }
-  const flatbuffers::String *codec_config_name() const {
-    return GetPointer<const flatbuffers::String *>(VT_CODEC_CONFIG_NAME);
+  template<typename StringType>
+  int KeyCompareWithValue(const StringType& _name) const {
+    if (name()->c_str() < _name) return -1;
+    if (_name < name()->c_str()) return 1;
+    return 0;
   }
-  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *qos_config_name() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_QOS_CONFIG_NAME);
+  const ::flatbuffers::String *codec_config_name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_CODEC_CONFIG_NAME);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *qos_config_name() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *>(VT_QOS_CONFIG_NAME);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffsetRequired(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -674,24 +692,24 @@ struct AudioSetConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
 
 struct AudioSetConfigurationBuilder {
   typedef AudioSetConfiguration Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(AudioSetConfiguration::VT_NAME, name);
   }
-  void add_codec_config_name(flatbuffers::Offset<flatbuffers::String> codec_config_name) {
+  void add_codec_config_name(::flatbuffers::Offset<::flatbuffers::String> codec_config_name) {
     fbb_.AddOffset(AudioSetConfiguration::VT_CODEC_CONFIG_NAME, codec_config_name);
   }
-  void add_qos_config_name(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> qos_config_name) {
+  void add_qos_config_name(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> qos_config_name) {
     fbb_.AddOffset(AudioSetConfiguration::VT_QOS_CONFIG_NAME, qos_config_name);
   }
-  explicit AudioSetConfigurationBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit AudioSetConfigurationBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<AudioSetConfiguration> Finish() {
+  ::flatbuffers::Offset<AudioSetConfiguration> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<AudioSetConfiguration>(end);
+    auto o = ::flatbuffers::Offset<AudioSetConfiguration>(end);
     fbb_.Required(o, AudioSetConfiguration::VT_NAME);
     fbb_.Required(o, AudioSetConfiguration::VT_CODEC_CONFIG_NAME);
     fbb_.Required(o, AudioSetConfiguration::VT_QOS_CONFIG_NAME);
@@ -699,11 +717,11 @@ struct AudioSetConfigurationBuilder {
   }
 };
 
-inline flatbuffers::Offset<AudioSetConfiguration> CreateAudioSetConfiguration(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<flatbuffers::String> codec_config_name = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> qos_config_name = 0) {
+inline ::flatbuffers::Offset<AudioSetConfiguration> CreateAudioSetConfiguration(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> codec_config_name = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> qos_config_name = 0) {
   AudioSetConfigurationBuilder builder_(_fbb);
   builder_.add_qos_config_name(qos_config_name);
   builder_.add_codec_config_name(codec_config_name);
@@ -711,14 +729,14 @@ inline flatbuffers::Offset<AudioSetConfiguration> CreateAudioSetConfiguration(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<AudioSetConfiguration> CreateAudioSetConfigurationDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<AudioSetConfiguration> CreateAudioSetConfigurationDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     const char *codec_config_name = nullptr,
-    const std::vector<flatbuffers::Offset<flatbuffers::String>> *qos_config_name = nullptr) {
+    const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *qos_config_name = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   auto codec_config_name__ = codec_config_name ? _fbb.CreateString(codec_config_name) : 0;
-  auto qos_config_name__ = qos_config_name ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*qos_config_name) : 0;
+  auto qos_config_name__ = qos_config_name ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*qos_config_name) : 0;
   return aidl::android::hardware::bluetooth::audio::le_audio::CreateAudioSetConfiguration(
       _fbb,
       name__,
@@ -726,7 +744,7 @@ inline flatbuffers::Offset<AudioSetConfiguration> CreateAudioSetConfigurationDir
       qos_config_name__);
 }
 
-struct AudioSetConfigurations FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct AudioSetConfigurations FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef AudioSetConfigurationsBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT__COMMENTS_ = 4,
@@ -734,19 +752,19 @@ struct AudioSetConfigurations FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tab
     VT_CODEC_CONFIGURATIONS = 8,
     VT_QOS_CONFIGURATIONS = 10
   };
-  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *_comments_() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT__COMMENTS_);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *_comments_() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *>(VT__COMMENTS_);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>> *configurations() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>> *>(VT_CONFIGURATIONS);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>> *configurations() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>> *>(VT_CONFIGURATIONS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>> *codec_configurations() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>> *>(VT_CODEC_CONFIGURATIONS);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>> *codec_configurations() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>> *>(VT_CODEC_CONFIGURATIONS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>> *qos_configurations() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>> *>(VT_QOS_CONFIGURATIONS);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>> *qos_configurations() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>> *>(VT_QOS_CONFIGURATIONS);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT__COMMENTS_) &&
            verifier.VerifyVector(_comments_()) &&
@@ -766,27 +784,27 @@ struct AudioSetConfigurations FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tab
 
 struct AudioSetConfigurationsBuilder {
   typedef AudioSetConfigurations Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add__comments_(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> _comments_) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add__comments_(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> _comments_) {
     fbb_.AddOffset(AudioSetConfigurations::VT__COMMENTS_, _comments_);
   }
-  void add_configurations(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>>> configurations) {
+  void add_configurations(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>>> configurations) {
     fbb_.AddOffset(AudioSetConfigurations::VT_CONFIGURATIONS, configurations);
   }
-  void add_codec_configurations(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>>> codec_configurations) {
+  void add_codec_configurations(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>>> codec_configurations) {
     fbb_.AddOffset(AudioSetConfigurations::VT_CODEC_CONFIGURATIONS, codec_configurations);
   }
-  void add_qos_configurations(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>>> qos_configurations) {
+  void add_qos_configurations(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>>> qos_configurations) {
     fbb_.AddOffset(AudioSetConfigurations::VT_QOS_CONFIGURATIONS, qos_configurations);
   }
-  explicit AudioSetConfigurationsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit AudioSetConfigurationsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<AudioSetConfigurations> Finish() {
+  ::flatbuffers::Offset<AudioSetConfigurations> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<AudioSetConfigurations>(end);
+    auto o = ::flatbuffers::Offset<AudioSetConfigurations>(end);
     fbb_.Required(o, AudioSetConfigurations::VT_CONFIGURATIONS);
     fbb_.Required(o, AudioSetConfigurations::VT_CODEC_CONFIGURATIONS);
     fbb_.Required(o, AudioSetConfigurations::VT_QOS_CONFIGURATIONS);
@@ -794,12 +812,12 @@ struct AudioSetConfigurationsBuilder {
   }
 };
 
-inline flatbuffers::Offset<AudioSetConfigurations> CreateAudioSetConfigurations(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> _comments_ = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>>> configurations = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>>> codec_configurations = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>>> qos_configurations = 0) {
+inline ::flatbuffers::Offset<AudioSetConfigurations> CreateAudioSetConfigurations(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> _comments_ = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>>> configurations = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>>> codec_configurations = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>>> qos_configurations = 0) {
   AudioSetConfigurationsBuilder builder_(_fbb);
   builder_.add_qos_configurations(qos_configurations);
   builder_.add_codec_configurations(codec_configurations);
@@ -808,13 +826,13 @@ inline flatbuffers::Offset<AudioSetConfigurations> CreateAudioSetConfigurations(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<AudioSetConfigurations> CreateAudioSetConfigurationsDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<flatbuffers::String>> *_comments_ = nullptr,
-    std::vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>> *configurations = nullptr,
-    std::vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>> *codec_configurations = nullptr,
-    std::vector<flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>> *qos_configurations = nullptr) {
-  auto _comments___ = _comments_ ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*_comments_) : 0;
+inline ::flatbuffers::Offset<AudioSetConfigurations> CreateAudioSetConfigurationsDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *_comments_ = nullptr,
+    std::vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>> *configurations = nullptr,
+    std::vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>> *codec_configurations = nullptr,
+    std::vector<::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>> *qos_configurations = nullptr) {
+  auto _comments___ = _comments_ ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*_comments_) : 0;
   auto configurations__ = configurations ? _fbb.CreateVectorOfSortedTables<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfiguration>(configurations) : 0;
   auto codec_configurations__ = codec_configurations ? _fbb.CreateVectorOfSortedTables<aidl::android::hardware::bluetooth::audio::le_audio::CodecConfiguration>(codec_configurations) : 0;
   auto qos_configurations__ = qos_configurations ? _fbb.CreateVectorOfSortedTables<aidl::android::hardware::bluetooth::audio::le_audio::QosConfiguration>(qos_configurations) : 0;
@@ -827,32 +845,32 @@ inline flatbuffers::Offset<AudioSetConfigurations> CreateAudioSetConfigurationsD
 }
 
 inline const aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations *GetAudioSetConfigurations(const void *buf) {
-  return flatbuffers::GetRoot<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations>(buf);
+  return ::flatbuffers::GetRoot<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations>(buf);
 }
 
 inline const aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations *GetSizePrefixedAudioSetConfigurations(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations>(buf);
+  return ::flatbuffers::GetSizePrefixedRoot<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations>(buf);
 }
 
 inline bool VerifyAudioSetConfigurationsBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations>(nullptr);
 }
 
 inline bool VerifySizePrefixedAudioSetConfigurationsBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifySizePrefixedBuffer<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations>(nullptr);
 }
 
 inline void FinishAudioSetConfigurationsBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedAudioSetConfigurationsBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<aidl::android::hardware::bluetooth::audio::le_audio::AudioSetConfigurations> root) {
   fbb.FinishSizePrefixed(root);
 }
 

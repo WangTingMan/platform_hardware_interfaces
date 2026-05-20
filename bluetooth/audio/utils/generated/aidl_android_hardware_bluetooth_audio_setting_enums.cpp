@@ -30,6 +30,7 @@ namespace aidl {
                             { "LC3", CodecType::LC3 },
                             { "APTX_ADAPTIVE_LE", CodecType::APTX_ADAPTIVE_LE },
                             { "APTX_ADAPTIVE_LEX", CodecType::APTX_ADAPTIVE_LEX },
+                            { "OPUS", CodecType::OPUS },
                         };
 
                         CodecType stringToCodecType(const std::string& value) {
@@ -42,6 +43,7 @@ namespace aidl {
                                 case CodecType::LC3: return "LC3";
                                 case CodecType::APTX_ADAPTIVE_LE: return "APTX_ADAPTIVE_LE";
                                 case CodecType::APTX_ADAPTIVE_LEX: return "APTX_ADAPTIVE_LEX";
+                                case CodecType::OPUS: return "OPUS";
                                 default: return std::to_string(static_cast<int>(o));
                             }
                         }
