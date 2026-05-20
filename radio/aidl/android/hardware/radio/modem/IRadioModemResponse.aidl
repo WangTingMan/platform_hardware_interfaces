@@ -30,7 +30,7 @@ import android.hardware.radio.modem.RadioCapability;
 oneway interface IRadioModemResponse {
     /**
      * Acknowledge the receipt of radio request sent to the vendor. This must be sent only for
-     * radio request which take long time to respond. For more details, refer
+     * radio requests which take a long time to respond. For more details, refer
      * https://source.android.com/devices/tech/connect/ril.html
      *
      * @param serial Serial no. of the request whose acknowledgement is sent.
@@ -175,8 +175,6 @@ oneway interface IRadioModemResponse {
      * Valid errors returned:
      *   RadioError:NONE
      *   RadioError:RADIO_NOT_AVAILABLE
-     *
-     * Note: This will be deprecated in favor of a rebootModemResponse API in Android U.
      */
     void nvResetConfigResponse(in RadioResponseInfo info);
 

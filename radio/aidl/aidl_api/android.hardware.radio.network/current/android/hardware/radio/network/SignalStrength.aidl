@@ -33,10 +33,16 @@
 
 package android.hardware.radio.network;
 /* @hide */
-@JavaDerive(toString=true) @VintfStability
+@JavaDerive(toString=true) @RustDerive(Clone=true, Eq=true, PartialEq=true) @VintfStability
 parcelable SignalStrength {
   android.hardware.radio.network.GsmSignalStrength gsm;
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   android.hardware.radio.network.CdmaSignalStrength cdma;
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   android.hardware.radio.network.EvdoSignalStrength evdo;
   android.hardware.radio.network.LteSignalStrength lte;
   android.hardware.radio.network.TdscdmaSignalStrength tdscdma;

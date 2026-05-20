@@ -33,12 +33,15 @@
 
 package android.hardware.radio.network;
 /* @hide */
-@JavaDerive(toString=true) @VintfStability
+@JavaDerive(toString=true) @RustDerive(Clone=true, Eq=true, PartialEq=true) @VintfStability
 union CellInfoRatSpecificInfo {
   android.hardware.radio.network.CellInfoGsm gsm;
   android.hardware.radio.network.CellInfoWcdma wcdma;
   android.hardware.radio.network.CellInfoTdscdma tdscdma;
   android.hardware.radio.network.CellInfoLte lte;
   android.hardware.radio.network.CellInfoNr nr;
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   android.hardware.radio.network.CellInfoCdma cdma;
 }

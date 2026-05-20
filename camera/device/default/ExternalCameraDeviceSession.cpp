@@ -1099,10 +1099,13 @@ int ExternalCameraDeviceSession::configureV4l2StreamLocked(const SupportedV4L2Fo
     uint32_t bufferSize = fmt.fmt.pix.sizeimage;
     ALOGI("%s: V4L2 buffer size is %d", __FUNCTION__, bufferSize);
     uint32_t expectedMaxBufferSize = kMaxBytesPerPixel * fmt.fmt.pix.width * fmt.fmt.pix.height;
-    if ((bufferSize == 0) || (bufferSize > expectedMaxBufferSize)) {
-        ALOGE("%s: V4L2 buffer size: %u looks invalid. Expected maximum size: %u", __FUNCTION__,
-              bufferSize, expectedMaxBufferSize);
+    if (bufferSize == 0) {
+        ALOGE("%s: Invalid V4L2 buffer size = 0", __FUNCTION__);
         return -EINVAL;
+    } else if (bufferSize > expectedMaxBufferSize) {
+        ALOGW("%s: V4L2 buffer size: %u, larger than maximum size: %u, clamping to %u",
+              __FUNCTION__, bufferSize, expectedMaxBufferSize, expectedMaxBufferSize);
+        bufferSize = expectedMaxBufferSize;
     }
     mMaxV4L2BufferSize = bufferSize;
 
@@ -1185,6 +1188,7 @@ int ExternalCameraDeviceSession::configureV4l2StreamLocked(const SupportedV4L2Fo
             if (numAttempt == MAX_RETRY) {
                 break;
             }
+            numAttempt++;
             if (ret < 0) {
                 ALOGW("%s: VIDIOC_STREAMON failed, wait 33ms and try again", __FUNCTION__);
                 usleep(IOCTL_RETRY_SLEEP_US);  // sleep 100 ms and try again
@@ -2042,6 +2046,8 @@ void ExternalCameraDeviceSession::BufferRequestThread::waitForNextRequest() {
 bool ExternalCameraDeviceSession::BufferRequestThread::threadLoop() {
     waitForNextRequest();
     if (exitPending()) {
+        mBufferReqs.clear();
+        mRequestDoneCond.notify_one();
         return false;
     }
 
@@ -2878,7 +2884,12 @@ bool ExternalCameraDeviceSession::OutputThread::threadLoop() {
     ALOGV("%s processing new request", __FUNCTION__);
     const int kSyncWaitTimeoutMs = 500;
     for (auto& halBuf : req->buffers) {
-        if (*(halBuf.bufPtr) == nullptr) {
+        if (halBuf.bufPtr == nullptr) {
+            // This can happen if mBufferRequestThread is closed before bufPtr is filled,
+            // typically when the session is closing. Treat it as a import failure and move on.
+            ALOGW("%s: Could not import buffer for stream %d", __FUNCTION__, halBuf.streamId);
+            halBuf.fenceTimeout = true;
+        } else if (*(halBuf.bufPtr) == nullptr) {
             ALOGW("%s: buffer for stream %d missing", __FUNCTION__, halBuf.streamId);
             halBuf.fenceTimeout = true;
         } else if (halBuf.acquireFence >= 0) {

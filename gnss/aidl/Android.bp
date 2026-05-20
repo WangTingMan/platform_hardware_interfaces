@@ -26,10 +26,12 @@ package {
 aidl_interface {
     name: "android.hardware.gnss",
     vendor_available: true,
+    host_supported: true,
     srcs: [
         "android/hardware/gnss/*.aidl",
         "android/hardware/gnss/measurement_corrections/*.aidl",
         "android/hardware/gnss/visibility_control/*.aidl",
+        "android/hardware/gnss/gnss_assistance/*.aidl",
     ],
     stability: "vintf",
     backend: {
@@ -54,8 +56,40 @@ aidl_interface {
             version: "4",
             imports: [],
         },
+        {
+            version: "5",
+            imports: [],
+        },
+        {
+            version: "6",
+            imports: [],
+        },
 
     ],
-    frozen: true,
+    frozen: false,
 
+}
+
+// cc_defaults that includes the latest gnss AIDL library.
+// Modules that depend on gnss directly can include this cc_defaults to avoid
+// managing dependency versions explicitly.
+cc_defaults {
+    name: "gnss_use_latest_hal_aidl_cpp_static",
+    static_libs: [
+        "android.hardware.gnss-V7-cpp",
+    ],
+}
+
+cc_defaults {
+    name: "gnss_use_latest_hal_aidl_cpp_shared",
+    shared_libs: [
+        "android.hardware.gnss-V7-cpp",
+    ],
+}
+
+cc_defaults {
+    name: "gnss_use_latest_hal_aidl_ndk_shared",
+    shared_libs: [
+        "android.hardware.gnss-V7-ndk",
+    ],
 }

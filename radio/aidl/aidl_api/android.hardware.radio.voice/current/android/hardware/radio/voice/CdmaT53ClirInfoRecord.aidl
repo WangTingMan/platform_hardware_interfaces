@@ -33,7 +33,10 @@
 
 package android.hardware.radio.voice;
 /* @hide */
-@JavaDerive(toString=true) @VintfStability
+@JavaDerive(toString=true) @RustDerive(Clone=true, Eq=true, PartialEq=true) @VintfStability
 parcelable CdmaT53ClirInfoRecord {
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   byte cause;
 }

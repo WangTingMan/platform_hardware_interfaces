@@ -36,6 +36,9 @@ package android.hardware.radio.network;
 @VintfStability
 interface IRadioNetworkIndication {
   oneway void barringInfoChanged(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.CellIdentity cellIdentity, in android.hardware.radio.network.BarringInfo[] barringInfos);
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   oneway void cdmaPrlChanged(in android.hardware.radio.RadioIndicationType type, in int version);
   oneway void cellInfoList(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.CellInfo[] records);
   oneway void currentLinkCapacityEstimate(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.LinkCapacityEstimate lce);
@@ -52,4 +55,6 @@ interface IRadioNetworkIndication {
   oneway void emergencyNetworkScanResult(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.EmergencyRegResult result);
   oneway void cellularIdentifierDisclosed(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.CellularIdentifierDisclosure disclosure);
   oneway void securityAlgorithmsUpdated(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.SecurityAlgorithmUpdate securityAlgorithmUpdate);
+  /* @hide */
+  oneway void displayNetworkTypeChanged(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.DisplayNetworkType dnt);
 }

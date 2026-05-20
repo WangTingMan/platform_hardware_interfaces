@@ -275,8 +275,9 @@ enum SensorType {
      *  than every period_ns passed to setDelay() or to batch().
      *  See the definition of the on-change reporting mode for more information.
      *
-     *  SensorInfo.requiredPermission must be set to
-     *  SENSOR_PERMISSION_BODY_SENSORS.
+     *  The framework will override the SensorInfo.requiredPermission to either
+     *  SENSOR_PERMISSION_BODY_SENSORS or SENSOR_PERMISSION_READ_HEART_RATE
+     *  depending on the platform SDK version in order to ensure compatibility.
      *
      *  Both wake-up and non wake-up versions are useful.
      */
@@ -716,6 +717,20 @@ enum SensorType {
      * which might be more suitable.
      */
     HEADING = 42,
+
+    /**
+     * MOISTURE_INTRUSION
+     * trigger mode: on-change
+     *
+     * Detects moisture intrusion in the chassis of device. This detection is
+     * one-way and persistent. Once a device is detected to have water damage,
+     * it will always report 1 (across factory reset /reboot) even if moisture
+     * is no longer present, until the device has been repaired.
+     * The only allowed values to return are:
+     *   0.0: no moisture intrusion detected in relevant history
+     *   1.0: moisture intrusion detected now or previously
+     */
+    MOISTURE_INTRUSION = 43,
 
     /**
      * Base of the range reserved for device manufacturers' private sensor

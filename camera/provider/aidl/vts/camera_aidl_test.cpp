@@ -1456,7 +1456,7 @@ void CameraAidlTest::verifyLogicalOrUltraHighResCameraMetadata(
         camera_metadata_ro_entry physicalStreamConfigs;
         camera_metadata_ro_entry physicalMaxResolutionStreamConfigs;
         CameraMetadata physChars;
-        bool isUltraHighRes = false;
+        bool supportsSensorPixelModeMaxRes = false;
         std::unordered_set<int32_t> subCameraPrivacyTestPatterns;
         if (isPublicId) {
             std::shared_ptr<ICameraDevice> subDevice;
@@ -1484,7 +1484,7 @@ void CameraAidlTest::verifyLogicalOrUltraHighResCameraMetadata(
             getMultiResolutionStreamConfigurations(
                     &physicalMultiResStreamConfigs, &physicalStreamConfigs,
                     &physicalMaxResolutionStreamConfigs, staticMetadata);
-            isUltraHighRes = isUltraHighResolution(staticMetadata);
+            supportsSensorPixelModeMaxRes = supportsSensorPixelModeMaxResolution(staticMetadata);
 
             getPrivacyTestPatternModes(staticMetadata, &subCameraPrivacyTestPatterns);
         } else {
@@ -1504,7 +1504,7 @@ void CameraAidlTest::verifyLogicalOrUltraHighResCameraMetadata(
             getMultiResolutionStreamConfigurations(
                     &physicalMultiResStreamConfigs, &physicalStreamConfigs,
                     &physicalMaxResolutionStreamConfigs, staticMetadata);
-            isUltraHighRes = isUltraHighResolution(staticMetadata);
+            supportsSensorPixelModeMaxRes = supportsSensorPixelModeMaxResolution(staticMetadata);
             getPrivacyTestPatternModes(staticMetadata, &subCameraPrivacyTestPatterns);
 
             // Check calling getCameraDeviceInterface_V3_x() on hidden camera id returns
@@ -1552,8 +1552,8 @@ void CameraAidlTest::verifyLogicalOrUltraHighResCameraMetadata(
                 }
                 // Check if the resolution is the max resolution in max
                 // resolution stream configuration map
-                bool supportedUltraHighRes = false;
-                bool isUltraHighResMaxSize = true;
+                bool supportedByMaxRes = false;
+                bool isMaxResMaxSize = true;
                 for (size_t j = 0; j < physicalMaxResolutionStreamConfigs.count / 4; j++) {
                     int32_t format = physicalMaxResolutionStreamConfigs.data.i32[j * 4];
                     int32_t width = physicalMaxResolutionStreamConfigs.data.i32[j * 4 + 1];
@@ -1561,24 +1561,23 @@ void CameraAidlTest::verifyLogicalOrUltraHighResCameraMetadata(
                     int32_t input = physicalMaxResolutionStreamConfigs.data.i32[j * 4 + 3];
                     if (format == multiResFormat && input == multiResInput) {
                         if (width == multiResWidth && height == multiResHeight) {
-                            supportedUltraHighRes = true;
+                            supportedByMaxRes = true;
                         } else if (width * height > multiResWidth * multiResHeight) {
-                            isUltraHighResMaxSize = false;
+                            isMaxResMaxSize = false;
                         }
                     }
                 }
 
-                if (isUltraHighRes) {
-                    // For ultra high resolution camera, the configuration must
-                    // be the maximum size in stream configuration map, or max
-                    // resolution stream configuration map
-                    ASSERT_TRUE((supported && isMaxSize) ||
-                                (supportedUltraHighRes && isUltraHighResMaxSize));
+                if (supportsSensorPixelModeMaxRes) {
+                    // For a camera that supports maximum resolution sensor pixel mode, the
+                    // configuration must be the maximum size in stream configuration map,
+                    // or max resolution stream configuration map
+                    ASSERT_TRUE((supported && isMaxSize) || (supportedByMaxRes && isMaxResMaxSize));
                 } else {
                     // The configuration must be the maximum size in stream
                     // configuration map
                     ASSERT_TRUE(supported && isMaxSize);
-                    ASSERT_FALSE(supportedUltraHighRes);
+                    ASSERT_FALSE(supportedByMaxRes);
                 }
 
                 // Increment the counter for the configuration's format.
@@ -1677,6 +1676,20 @@ bool CameraAidlTest::isUltraHighResolution(const camera_metadata_t* staticMeta) 
         }
     }
     return false;
+}
+
+bool CameraAidlTest::supportsSensorPixelModeMaxResolution(const camera_metadata_t* staticMeta) {
+    camera_metadata_ro_entry entry;
+    int retcode = find_camera_metadata_ro_entry(staticMeta, ANDROID_REQUEST_AVAILABLE_REQUEST_KEYS,
+                                                &entry);
+    bool hasSensorPixelMode = false;
+    if ((0 == retcode) && (entry.count > 0)) {
+        hasSensorPixelMode = std::find(entry.data.i32, entry.data.i32 + entry.count,
+                                       ANDROID_SENSOR_PIXEL_MODE) != entry.data.i32 + entry.count;
+    } else {
+        ADD_FAILURE() << "Get camera availableRequestKeys failed!";
+    }
+    return hasSensorPixelMode;
 }
 
 Status CameraAidlTest::getSupportedKeys(camera_metadata_t* staticMeta, uint32_t tagId,
@@ -1814,7 +1827,7 @@ void CameraAidlTest::openEmptyDeviceSession(const std::string& name,
     ALOGI("getCameraDeviceInterface returns status:%d:%d", ret.getExceptionCode(),
           ret.getServiceSpecificError());
     ASSERT_TRUE(ret.isOk());
-    ASSERT_NE(device, nullptr);
+    ASSERT_NE(*device, nullptr);
 
     std::shared_ptr<EmptyDeviceCb> cb = ndk::SharedRefBase::make<EmptyDeviceCb>();
     ret = (*device)->open(cb, session);
@@ -2296,14 +2309,10 @@ void CameraAidlTest::processCaptureRequestInternal(uint64_t bufferUsage,
         bool supportsPartialResults = false;
         bool useHalBufManager = false;
         int32_t partialResultCount = 0;
-        configureSingleStream(name, mProvider, &streamThreshold, bufferUsage, reqTemplate,
-                              &session /*out*/, &testStream /*out*/, &halStreams /*out*/,
-                              &supportsPartialResults /*out*/, &partialResultCount /*out*/,
-                              &useHalBufManager /*out*/, &cb /*out*/);
-
-        ASSERT_NE(session, nullptr);
-        ASSERT_NE(cb, nullptr);
-        ASSERT_FALSE(halStreams.empty());
+        ASSERT_NO_FATAL_FAILURE(configureSingleStream(
+                name, mProvider, &streamThreshold, bufferUsage, reqTemplate, &session /*out*/,
+                &testStream /*out*/, &halStreams /*out*/, &supportsPartialResults /*out*/,
+                &partialResultCount /*out*/, &useHalBufManager /*out*/, &cb /*out*/));
 
         std::shared_ptr<ResultMetadataQueue> resultQueue;
         ::aidl::android::hardware::common::fmq::MQDescriptor<
@@ -2462,8 +2471,8 @@ void CameraAidlTest::configureStreamUseCaseInternal(const AvailableStream &thres
         CameraMetadata meta;
         std::shared_ptr<ICameraDevice> cameraDevice;
 
-        openEmptyDeviceSession(name, mProvider, &mSession /*out*/, &meta /*out*/,
-                               &cameraDevice /*out*/);
+        ASSERT_NO_FATAL_FAILURE(openEmptyDeviceSession(name, mProvider, &mSession /*out*/,
+                                                       &meta /*out*/, &cameraDevice /*out*/));
 
         camera_metadata_t* staticMeta = reinterpret_cast<camera_metadata_t*>(meta.metadata.data());
         // Check if camera support depth only or doesn't support stream use case capability
@@ -2590,8 +2599,7 @@ ndk::ScopedAStatus CameraAidlTest::configureStreams(std::shared_ptr<ICameraDevic
         return ret;
     }
 
-    if (flags::session_hal_buf_manager() &&
-        (bufferManagerType == BufferManagerType::SESSION && interfaceVersion >= 3)) {
+    if (bufferManagerType == BufferManagerType::SESSION && interfaceVersion >= 3) {
         ret = session->configureStreamsV2(config, &aidl_return);
     } else {
         ret = session->configureStreams(config, halStreams);
@@ -2599,12 +2607,11 @@ ndk::ScopedAStatus CameraAidlTest::configureStreams(std::shared_ptr<ICameraDevic
     if (!ret.isOk()) {
         return ret;
     }
-    if (flags::session_hal_buf_manager() && bufferManagerType == BufferManagerType::SESSION) {
+    if (bufferManagerType == BufferManagerType::SESSION) {
         *halStreams = std::move(aidl_return.halStreams);
     }
     for (const auto& halStream : *halStreams) {
-        if ((flags::session_hal_buf_manager() && bufferManagerType == BufferManagerType::SESSION &&
-             halStream.enableHalBufferManager) ||
+        if ((bufferManagerType == BufferManagerType::SESSION && halStream.enableHalBufferManager) ||
             bufferManagerType == BufferManagerType::HAL) {
             halBufManagedStreamIds->insert(halStream.id);
         }
@@ -2720,37 +2727,37 @@ void CameraAidlTest::configureSingleStream(
     config.streams = streams;
     createStreamConfiguration(streams, StreamConfigurationMode::NORMAL_MODE, &config,
                               jpegBufferSize);
-    if (*session != nullptr) {
-        CameraMetadata sessionParams;
-        ret = (*session)->constructDefaultRequestSettings(reqTemplate, &sessionParams);
-        ASSERT_TRUE(ret.isOk());
-        config.sessionParams = sessionParams;
-        config.streamConfigCounter = (int32_t)streamConfigCounter;
 
-        bool supported = false;
-        ret = device->isStreamCombinationSupported(config, &supported);
-        ASSERT_TRUE(ret.isOk());
-        ASSERT_EQ(supported, true);
+    CameraMetadata sessionParams;
+    ret = (*session)->constructDefaultRequestSettings(reqTemplate, &sessionParams);
+    ASSERT_TRUE(ret.isOk());
+    config.sessionParams = sessionParams;
+    config.streamConfigCounter = (int32_t)streamConfigCounter;
 
-        std::vector<HalStream> halConfigs;
-        std::set<int32_t> halBufManagedStreamIds;
-        ret = configureStreams(*session, config, bufferManagerType, &halBufManagedStreamIds,
-                               &halConfigs);
-        ALOGI("configureStreams returns status: %d:%d", ret.getExceptionCode(),
-              ret.getServiceSpecificError());
-        ASSERT_TRUE(ret.isOk());
-        ASSERT_EQ(1u, halConfigs.size());
-        halStreams->clear();
-        halStreams->push_back(halConfigs[0]);
-        *useHalBufManager = halBufManagedStreamIds.size() != 0;
-        if (*useHalBufManager) {
-            std::vector<Stream> ss(1);
-            std::vector<HalStream> hs(1);
-            ss[0] = config.streams[0];
-            hs[0] = halConfigs[0];
-            (*cb)->setCurrentStreamConfig(ss, hs);
-        }
+    bool supported = false;
+    ret = device->isStreamCombinationSupported(config, &supported);
+    ASSERT_TRUE(ret.isOk());
+    ASSERT_EQ(supported, true);
+
+    std::vector<HalStream> halConfigs;
+    std::set<int32_t> halBufManagedStreamIds;
+    ret = configureStreams(*session, config, bufferManagerType, &halBufManagedStreamIds,
+                           &halConfigs);
+    ALOGI("configureStreams returns status: %d:%d", ret.getExceptionCode(),
+          ret.getServiceSpecificError());
+    ASSERT_TRUE(ret.isOk());
+    ASSERT_EQ(1u, halConfigs.size());
+    halStreams->clear();
+    halStreams->push_back(halConfigs[0]);
+    *useHalBufManager = halBufManagedStreamIds.size() != 0;
+    if (*useHalBufManager) {
+        std::vector<Stream> ss(1);
+        std::vector<HalStream> hs(1);
+        ss[0] = config.streams[0];
+        hs[0] = halConfigs[0];
+        (*cb)->setCurrentStreamConfig(ss, hs);
     }
+
     *previewStream = config.streams[0];
     ASSERT_TRUE(ret.isOk());
 }
@@ -2810,10 +2817,11 @@ void CameraAidlTest::processPreviewStabilizationCaptureRequestInternal(
         bool supportsPartialResults = false;
         bool useHalBufManager = false;
         int32_t partialResultCount = 0;
-        configureSingleStream(name, mProvider, &streamThreshold, GRALLOC1_CONSUMER_USAGE_HWCOMPOSER,
-                              RequestTemplate::PREVIEW, &session /*out*/, &testStream /*out*/,
-                              &halStreams /*out*/, &supportsPartialResults /*out*/,
-                              &partialResultCount /*out*/, &useHalBufManager /*out*/, &cb /*out*/);
+        ASSERT_NO_FATAL_FAILURE(configureSingleStream(
+                name, mProvider, &streamThreshold, GRALLOC1_CONSUMER_USAGE_HWCOMPOSER,
+                RequestTemplate::PREVIEW, &session /*out*/, &testStream /*out*/,
+                &halStreams /*out*/, &supportsPartialResults /*out*/, &partialResultCount /*out*/,
+                &useHalBufManager /*out*/, &cb /*out*/));
 
         ::aidl::android::hardware::common::fmq::MQDescriptor<
                 int8_t, aidl::android::hardware::common::fmq::SynchronizedReadWrite>
@@ -3572,10 +3580,10 @@ void CameraAidlTest::configurePreviewStream(
         Stream* previewStream, std::vector<HalStream>* halStreams, bool* supportsPartialResults,
         int32_t* partialResultCount, bool* useHalBufManager, std::shared_ptr<DeviceCb>* cb,
         uint32_t streamConfigCounter) {
-    configureSingleStream(name, provider, previewThreshold, GRALLOC1_CONSUMER_USAGE_HWCOMPOSER,
-                          RequestTemplate::PREVIEW, session, previewStream, halStreams,
-                          supportsPartialResults, partialResultCount, useHalBufManager, cb,
-                          streamConfigCounter);
+    ASSERT_NO_FATAL_FAILURE(configureSingleStream(
+            name, provider, previewThreshold, GRALLOC1_CONSUMER_USAGE_HWCOMPOSER,
+            RequestTemplate::PREVIEW, session, previewStream, halStreams, supportsPartialResults,
+            partialResultCount, useHalBufManager, cb, streamConfigCounter));
 }
 
 Status CameraAidlTest::isOfflineSessionSupported(const camera_metadata_t* staticMeta) {
@@ -3733,7 +3741,7 @@ void CameraAidlTest::processColorSpaceRequest(
         ASSERT_TRUE(matchDeviceName(name, mProviderType, &version, &deviceId));
         CameraMetadata meta;
         std::shared_ptr<ICameraDevice> device;
-        openEmptyDeviceSession(name, mProvider, &mSession, &meta, &device);
+        ASSERT_NO_FATAL_FAILURE(openEmptyDeviceSession(name, mProvider, &mSession, &meta, &device));
         camera_metadata_t* staticMeta = reinterpret_cast<camera_metadata_t*>(meta.metadata.data());
 
         // Device does not report color spaces, skip.
@@ -3954,8 +3962,8 @@ void CameraAidlTest::processZoomSettingsOverrideRequests(
     for (const auto& name : cameraDeviceNames) {
         CameraMetadata meta;
         std::shared_ptr<ICameraDevice> device;
-        openEmptyDeviceSession(name, mProvider, &mSession /*out*/, &meta /*out*/,
-                               &device /*out*/);
+        ASSERT_NO_FATAL_FAILURE(openEmptyDeviceSession(name, mProvider, &mSession /*out*/,
+                                                       &meta /*out*/, &device /*out*/));
         camera_metadata_t* staticMeta =
                 clone_camera_metadata(reinterpret_cast<camera_metadata_t*>(meta.metadata.data()));
 

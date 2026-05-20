@@ -24,6 +24,7 @@ import android.hardware.radio.ims.SuggestedAction;
 @VintfStability
 @JavaDerive(toString=true)
 @SuppressWarnings(value={"redundant-name"})
+@RustDerive(Clone=true, Eq=true, PartialEq=true)
 parcelable ImsRegistration {
     /** Default value */
     const int IMS_MMTEL_CAPABILITY_NONE = 0;
@@ -52,4 +53,11 @@ parcelable ImsRegistration {
      * IMS capability such as VOICE, VIDEO, SMS and RCS.
      */
     int capabilities;
+
+    /**
+     * Indicates the registration throttling time in seconds.
+     * This value is only applicable if the suggested action is
+     * SuggestedAction#TRIGGER_THROTTLE_TIME
+     */
+    int throttlingTimeSec;
 }

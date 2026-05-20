@@ -25,6 +25,7 @@
 #include "DeviceFileReader.h"
 #include "FixLocationParser.h"
 #include "GnssAntennaInfo.h"
+#include "GnssAssistanceInterface.h"
 #include "GnssBatching.h"
 #include "GnssConfiguration.h"
 #include "GnssDebug.h"
@@ -53,7 +54,10 @@ ScopedAStatus Gnss::setCallback(const std::shared_ptr<IGnssCallback>& callback) 
         ALOGE("%s: Null callback ignored", __func__);
         return ScopedAStatus::fromExceptionCode(STATUS_INVALID_OPERATION);
     }
-    sGnssCallback = callback;
+    {
+        std::unique_lock<std::mutex> lock(mMutex);
+        sGnssCallback = callback;
+    }
 
     int capabilities =
             (int)(IGnssCallback::CAPABILITY_MEASUREMENTS | IGnssCallback::CAPABILITY_SCHEDULING |
@@ -62,7 +66,7 @@ ScopedAStatus Gnss::setCallback(const std::shared_ptr<IGnssCallback>& callback) 
                   IGnssCallback::CAPABILITY_CORRELATION_VECTOR |
                   IGnssCallback::CAPABILITY_ANTENNA_INFO |
                   IGnssCallback::CAPABILITY_ACCUMULATED_DELTA_RANGE);
-    auto status = sGnssCallback->gnssSetCapabilitiesCb(capabilities);
+    auto status = callback->gnssSetCapabilitiesCb(capabilities);
     if (!status.isOk()) {
         ALOGE("%s: Unable to invoke callback.gnssSetCapabilitiesCb", __func__);
     }
@@ -71,7 +75,7 @@ ScopedAStatus Gnss::setCallback(const std::shared_ptr<IGnssCallback>& callback) 
             .yearOfHw = 2022,
             .name = "Google, Cuttlefish, AIDL v3",
     };
-    status = sGnssCallback->gnssSetSystemInfoCb(systemInfo);
+    status = callback->gnssSetSystemInfoCb(systemInfo);
     if (!status.isOk()) {
         ALOGE("%s: Unable to invoke callback.gnssSetSystemInfoCb", __func__);
     }
@@ -85,11 +89,57 @@ ScopedAStatus Gnss::setCallback(const std::shared_ptr<IGnssCallback>& callback) 
             .carrierFrequencyHz = 1.5980625e+09,
             .codeType = GnssSignalType::CODE_TYPE_C,
     };
-    status = sGnssCallback->gnssSetSignalTypeCapabilitiesCb(
+    status = callback->gnssSetSignalTypeCapabilitiesCb(
             std::vector<GnssSignalType>({signalType1, signalType2}));
     if (!status.isOk()) {
         ALOGE("%s: Unable to invoke callback.gnssSetSignalTypeCapabilitiesCb", __func__);
     }
+
+    // In case when the setCallback() and close() calls are not balanced
+    mIsInitialized = false;
+    mIsActive = false;
+    mThreadBlocker.notify();
+    if (mThread.joinable()) {
+        mThread.join();
+    }
+
+    mIsInitialized = true;
+    mThreadBlocker.reset();
+    mThread = std::thread([this]() {
+        while (mIsInitialized) {
+            if (mIsActive) {
+                if (mReportedLocationCount == 0) {
+                    if (!mGnssMeasurementEnabled || mMinIntervalMs <= mGnssMeasurementIntervalMs) {
+                        this->reportSvStatus();
+                    }
+                    if (!mFirstFixReceived) {
+                        // Simulate the code start TTFF
+                        std::this_thread::sleep_for(std::chrono::milliseconds(TTFF_MILLIS));
+                        mFirstFixReceived = true;
+                    }
+                }
+                if (!mGnssMeasurementEnabled || mMinIntervalMs <= mGnssMeasurementIntervalMs) {
+                    this->reportSvStatus();
+                }
+                this->reportNmea();
+
+                auto currentLocation = getLocationFromHW();
+                mGnssPowerIndication->notePowerConsumption();
+                if (currentLocation != nullptr) {
+                    this->reportLocation(*currentLocation);
+                } else {
+                    const auto location = Utils::getMockLocation();
+                    this->reportLocation(location);
+                }
+                mReportedLocationCount += 1;
+                mThreadBlocker.wait_for(std::chrono::milliseconds(mMinIntervalMs));
+            } else {
+                // Wait indefinitely until start() or close() is called
+                mThreadBlocker.wait();
+            }
+        }
+    });
+
     return ScopedAStatus::ok();
 }
 
@@ -103,44 +153,16 @@ std::unique_ptr<GnssLocation> Gnss::getLocationFromHW() {
 }
 
 ScopedAStatus Gnss::start() {
-    ALOGD("start()");
+    ALOGD("start");
     if (mIsActive) {
         ALOGW("Gnss has started. Restarting...");
         stop();
     }
-
     mIsActive = true;
-    mThreadBlocker.reset();
     // notify measurement engine to update measurement interval
     mGnssMeasurementInterface->setLocationEnabled(true);
     this->reportGnssStatusValue(IGnssCallback::GnssStatusValue::SESSION_BEGIN);
-    mThread = std::thread([this]() {
-        if (!mGnssMeasurementEnabled || mMinIntervalMs <= mGnssMeasurementIntervalMs) {
-            this->reportSvStatus();
-        }
-        if (!mFirstFixReceived) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(TTFF_MILLIS));
-            mFirstFixReceived = true;
-        }
-        do {
-            if (!mIsActive) {
-                break;
-            }
-            if (!mGnssMeasurementEnabled || mMinIntervalMs <= mGnssMeasurementIntervalMs) {
-                this->reportSvStatus();
-            }
-            this->reportNmea();
-
-            auto currentLocation = getLocationFromHW();
-            mGnssPowerIndication->notePowerConsumption();
-            if (currentLocation != nullptr) {
-                this->reportLocation(*currentLocation);
-            } else {
-                const auto location = Utils::getMockLocation();
-                this->reportLocation(location);
-            }
-        } while (mIsActive && mThreadBlocker.wait_for(std::chrono::milliseconds(mMinIntervalMs)));
-    });
+    mThreadBlocker.notify();
     return ScopedAStatus::ok();
 }
 
@@ -149,6 +171,21 @@ ScopedAStatus Gnss::stop() {
     mIsActive = false;
     mGnssMeasurementInterface->setLocationEnabled(false);
     this->reportGnssStatusValue(IGnssCallback::GnssStatusValue::SESSION_END);
+
+    int reportedLocationCount = mReportedLocationCount;
+    ALOGD("reportedLocationCount: %d", reportedLocationCount);
+    mReportedLocationCount = 0;
+    mThreadBlocker.notify();
+    return ScopedAStatus::ok();
+}
+
+ScopedAStatus Gnss::close() {
+    ALOGD("close");
+    {
+        std::unique_lock<std::mutex> lock(mMutex);
+        sGnssCallback = nullptr;
+    }
+    mIsInitialized = false;
     mThreadBlocker.notify();
     if (mThread.joinable()) {
         mThread.join();
@@ -156,20 +193,18 @@ ScopedAStatus Gnss::stop() {
     return ScopedAStatus::ok();
 }
 
-ScopedAStatus Gnss::close() {
-    ALOGD("close");
-    sGnssCallback = nullptr;
-    return ScopedAStatus::ok();
-}
-
 void Gnss::reportLocation(const GnssLocation& location) {
-    std::unique_lock<std::mutex> lock(mMutex);
-    if (sGnssCallback == nullptr) {
-        ALOGE("%s: GnssCallback is null.", __func__);
-        return;
+    std::shared_ptr<IGnssCallback> callback;
+    {
+        std::unique_lock<std::mutex> lock(mMutex);
+        if (sGnssCallback == nullptr) {
+            ALOGE("%s: GnssCallback is null.", __func__);
+            return;
+        }
+        callback = sGnssCallback;
     }
     mLastLocation = std::make_shared<GnssLocation>(location);
-    auto status = sGnssCallback->gnssLocationCb(location);
+    auto status = callback->gnssLocationCb(location);
     if (!status.isOk()) {
         ALOGE("%s: Unable to invoke gnssLocationCb", __func__);
     }
@@ -184,12 +219,16 @@ void Gnss::reportSvStatus() const {
 }
 
 void Gnss::reportSvStatus(const std::vector<GnssSvInfo>& svInfoList) const {
-    std::unique_lock<std::mutex> lock(mMutex);
-    if (sGnssCallback == nullptr) {
-        ALOGE("%s: sGnssCallback is null.", __func__);
-        return;
+    std::shared_ptr<IGnssCallback> callback;
+    {
+        std::unique_lock<std::mutex> lock(mMutex);
+        if (sGnssCallback == nullptr) {
+            ALOGE("%s: GnssCallback is null.", __func__);
+            return;
+        }
+        callback = sGnssCallback;
     }
-    auto status = sGnssCallback->gnssSvStatusCb(svInfoList);
+    auto status = callback->gnssSvStatusCb(svInfoList);
     if (!status.isOk()) {
         ALOGE("%s: Unable to invoke callback", __func__);
     }
@@ -206,12 +245,16 @@ std::vector<GnssSvInfo> Gnss::filterBlocklistedSatellites(
 }
 
 void Gnss::reportGnssStatusValue(const IGnssCallback::GnssStatusValue gnssStatusValue) const {
-    std::unique_lock<std::mutex> lock(mMutex);
-    if (sGnssCallback == nullptr) {
-        ALOGE("%s: sGnssCallback is null.", __func__);
-        return;
+    std::shared_ptr<IGnssCallback> callback;
+    {
+        std::unique_lock<std::mutex> lock(mMutex);
+        if (sGnssCallback == nullptr) {
+            ALOGE("%s: GnssCallback is null.", __func__);
+            return;
+        }
+        callback = sGnssCallback;
     }
-    auto status = sGnssCallback->gnssStatusCb(gnssStatusValue);
+    auto status = callback->gnssStatusCb(gnssStatusValue);
     if (!status.isOk()) {
         ALOGE("%s: Unable to invoke gnssStatusCb", __func__);
     }
@@ -219,13 +262,17 @@ void Gnss::reportGnssStatusValue(const IGnssCallback::GnssStatusValue gnssStatus
 
 void Gnss::reportNmea() const {
     if (mIsNmeaActive) {
-        std::unique_lock<std::mutex> lock(mMutex);
-        if (sGnssCallback == nullptr) {
-            ALOGE("%s: sGnssCallback is null.", __func__);
-            return;
+        std::shared_ptr<IGnssCallback> callback;
+        {
+            std::unique_lock<std::mutex> lock(mMutex);
+            if (sGnssCallback == nullptr) {
+                ALOGE("%s: GnssCallback is null.", __func__);
+                return;
+            }
+            callback = sGnssCallback;
         }
         nsecs_t now = systemTime(SYSTEM_TIME_MONOTONIC);
-        auto status = sGnssCallback->gnssNmeaCb(now, "$TEST,0,1,2,3,4,5");
+        auto status = callback->gnssNmeaCb(now, "$TEST,0,1,2,3,4,5");
         if (!status.isOk()) {
             ALOGE("%s: Unable to invoke callback", __func__);
         }
@@ -293,8 +340,14 @@ ScopedAStatus Gnss::deleteAidingData(GnssAidingData aidingDataFlags) {
 ScopedAStatus Gnss::setPositionMode(const PositionModeOptions& options) {
     ALOGD("setPositionMode. minIntervalMs:%d, lowPowerMode:%d", options.minIntervalMs,
           (int)options.lowPowerMode);
-    mMinIntervalMs = std::max(1000, options.minIntervalMs);
-    mGnssMeasurementInterface->setLocationInterval(mMinIntervalMs);
+    if (std::max(1000, options.minIntervalMs) != mMinIntervalMs) {
+        mMinIntervalMs = std::max(1000, options.minIntervalMs);
+        mGnssMeasurementInterface->setLocationInterval(mMinIntervalMs);
+        if (mIsActive) {
+            stop();
+            start();
+        }
+    }
     return ScopedAStatus::ok();
 }
 
@@ -387,6 +440,14 @@ ndk::ScopedAStatus Gnss::getExtensionMeasurementCorrections(
 
     *iMeasurementCorrections =
             SharedRefBase::make<measurement_corrections::MeasurementCorrectionsInterface>();
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::getExtensionGnssAssistanceInterface(
+        std::shared_ptr<gnss_assistance::IGnssAssistanceInterface>* iGnssAssistanceInterface) {
+    ALOGD("Gnss::getExtensionGnssAssistanceInterface");
+
+    *iGnssAssistanceInterface = SharedRefBase::make<gnss_assistance::GnssAssistanceInterface>();
     return ndk::ScopedAStatus::ok();
 }
 

@@ -29,6 +29,7 @@ import android.hardware.gnss.IGnssMeasurementInterface;
 import android.hardware.gnss.IGnssNavigationMessageInterface;
 import android.hardware.gnss.IGnssPowerIndication;
 import android.hardware.gnss.IGnssPsds;
+import android.hardware.gnss.gnss_assistance.IGnssAssistanceInterface;
 import android.hardware.gnss.measurement_corrections.IMeasurementCorrectionsInterface;
 import android.hardware.gnss.visibility_control.IGnssVisibilityControl;
 
@@ -125,6 +126,11 @@ interface IGnss {
      * reopen this interface, to serve requests, there may be some minor delays in GNSS response
      * requests as hardware readiness states are restored, not to exceed those that occur on normal
      * device boot up.
+     *
+     * When the system server crashes, obviously the method will not be called, and the system
+     * server can no longer receive any updates from the GNSS HAL. For system health reasons, the
+     * GNSS HAL implementation must immediately stop responding to any existing requests until the
+     * setCallback() method is called again.
      */
     void close();
 
@@ -343,4 +349,11 @@ interface IGnss {
      * Stops the NMEA output stream.
      */
     void stopNmea();
+
+    /**
+     * This method returns the IGnssAssistanceInterface.
+     *
+     * @return Handle to the IGnssAssistanceInterface.
+     */
+    IGnssAssistanceInterface getExtensionGnssAssistanceInterface();
 }

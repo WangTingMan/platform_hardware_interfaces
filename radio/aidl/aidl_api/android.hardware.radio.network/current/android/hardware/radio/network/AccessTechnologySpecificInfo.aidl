@@ -33,9 +33,12 @@
 
 package android.hardware.radio.network;
 /* @hide */
-@JavaDerive(toString=true) @VintfStability
+@JavaDerive(toString=true) @RustDerive(Clone=true, Eq=true, PartialEq=true) @VintfStability
 union AccessTechnologySpecificInfo {
   boolean noinit;
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   android.hardware.radio.network.Cdma2000RegistrationInfo cdmaInfo;
   android.hardware.radio.network.EutranRegistrationInfo eutranInfo;
   android.hardware.radio.network.NrVopsInfo ngranNrVopsInfo;

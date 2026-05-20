@@ -139,15 +139,15 @@ oneway interface IRadioModem {
     void nvReadItem(in int serial, in NvItem itemId);
 
     /**
-     * Reset the radio NV configuration to the factory state.
-     * This is used for device configuration by some CDMA operators.
+     * Reboots modem.
+     *
+     * This was historically used to reset NV configuration, but starting from Android U, NV APIs
+     * are deprecated.
      *
      * @param serial Serial number of request.
-     * @param resetType ResetNvType
+     * @param resetType Always ResetNvType.RELOAD.
      *
      * Response function is IRadioModemResponse.nvResetConfigResponse()
-     *
-     * Note: This will be deprecated in favor of a rebootModem API in Android U.
      */
     void nvResetConfig(in int serial, in ResetNvType resetType);
 
@@ -240,6 +240,9 @@ oneway interface IRadioModem {
      *    preferredForEmergencyCall being false; or
      * 3) Timeout after 30 seconds if dial or emergencyDial is not called.
      * Once one of these conditions is reached, the modem should move into normal operation.
+     *
+     * 4) The power state is a common setting that affects all modems,
+     *    and warn that independent power states may cause undesirable behavior.
      *
      * @param serial Serial number of request.
      * @param powerOn To turn on radio -> on = true, to turn off radio -> on = false.

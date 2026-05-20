@@ -45,6 +45,16 @@ static std::vector<LeAudioCodecCapabilitiesSetting> leAudioCodecCapabilities;
 
 static bool isInvalidFileContent = false;
 
+// TODO: reuse from utils/aidl_session/BluetoothAudioType.h
+/* Vendor codec ID */
+constexpr uint16_t kLeAudioVendorCompanyIdGoogle = 0x00E0;
+constexpr uint16_t kLeAudioVendorCodecIdOpus = 0x0001;
+
+const CodecId::Vendor opus_codec{
+    .id = kLeAudioVendorCompanyIdGoogle,
+    .codecId = kLeAudioVendorCodecIdOpus,
+};
+
 std::optional<setting::LeAudioOffloadSetting>
 BluetoothLeAudioCodecsProvider::ParseFromLeAudioOffloadSettingFile() {
   auto le_audio_offload_setting =
@@ -126,6 +136,10 @@ BluetoothLeAudioCodecsProvider::GetLeAudioCodecInfo(
       case setting::CodecType::LC3:
         codec_info.name = "LC3";
         codec_info.id = CodecId::Core::LC3;
+        break;
+      case setting::CodecType::OPUS:
+        codec_info.name = "OPUS";
+        codec_info.id = opus_codec;
         break;
       default:
         codec_info.name = "UNDEFINE";
@@ -484,6 +498,12 @@ UnicastCapability BluetoothLeAudioCodecsProvider::GetUnicastCapability(
         strategy_configuration_iter->second.getConnectedDevice(),
         strategy_configuration_iter->second.getChannelCount(),
         ComposeAptxAdaptiveLeCapability(codec_configuration_iter->second));
+  } else if (codec_type == CodecType::OPUS) {
+    return ComposeUnicastCapability(
+        codec_type, audio_location, audio_channel_allocation,
+        strategy_configuration_iter->second.getConnectedDevice(),
+        strategy_configuration_iter->second.getChannelCount(),
+        ComposeOpusCapability(codec_configuration_iter->second));
   }
   return {.codecType = CodecType::UNKNOWN};
 }
@@ -588,6 +608,13 @@ BluetoothLeAudioCodecsProvider::ComposeAptxAdaptiveLeCapability(
           .octetsPerFrame = {codec_configuration.getOctetsPerCodecFrame()}};
 }
 
+OpusCapabilities BluetoothLeAudioCodecsProvider::ComposeOpusCapability(
+    const setting::CodecConfiguration& codec_configuration) {
+  return {.samplingFrequencyHz = {codec_configuration.getSamplingFrequency()},
+          .frameDurationUs = {codec_configuration.getFrameDurationUs()},
+          .octetsPerFrame = {codec_configuration.getOctetsPerCodecFrame()}};
+}
+
 AudioLocation BluetoothLeAudioCodecsProvider::GetAudioLocation(
     const setting::AudioLocation& audio_location) {
   switch (audio_location) {
@@ -609,6 +636,8 @@ CodecType BluetoothLeAudioCodecsProvider::GetCodecType(
       return CodecType::APTX_ADAPTIVE_LE;
     case setting::CodecType::APTX_ADAPTIVE_LEX:
       return CodecType::APTX_ADAPTIVE_LEX;
+    case setting::CodecType::OPUS:
+      return CodecType::OPUS;
     default:
       return CodecType::UNKNOWN;
   }

@@ -48,6 +48,7 @@ class RadioNetworkResponse : public BnRadioNetworkResponse {
     std::vector<RadioAccessSpecifier> specifiers;
     bool isCellularIdentifierTransparencyEnabled = false;
     bool isSecurityAlgorithmsUpdatedEnabled = false;
+    bool isSatelliteEnabledForCarrier = false;
 
     virtual ndk::ScopedAStatus acknowledgeRequest(int32_t serial) override;
 
@@ -183,6 +184,14 @@ class RadioNetworkResponse : public BnRadioNetworkResponse {
 
     virtual ndk::ScopedAStatus setSecurityAlgorithmsUpdatedEnabledResponse(
             const RadioResponseInfo& info) override;
+
+    virtual ndk::ScopedAStatus setSatellitePlmnResponse(const RadioResponseInfo& info) override;
+
+    virtual ndk::ScopedAStatus setSatelliteEnabledForCarrierResponse(
+            const RadioResponseInfo& info) override;
+
+    virtual ndk::ScopedAStatus isSatelliteEnabledForCarrierResponse(const RadioResponseInfo& info,
+                                                                    bool isEnabled) override;
 };
 
 /* Callback class for radio network indication */
@@ -193,6 +202,9 @@ class RadioNetworkIndication : public BnRadioNetworkIndication {
   public:
     RadioNetworkIndication(RadioServiceTest& parent_network);
     virtual ~RadioNetworkIndication() = default;
+
+    virtual ndk::ScopedAStatus displayNetworkTypeChanged(RadioIndicationType type,
+                                                         DisplayNetworkType dnt) override;
 
     virtual ndk::ScopedAStatus barringInfoChanged(
             RadioIndicationType type, const CellIdentity& cellIdentity,

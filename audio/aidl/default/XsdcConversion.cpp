@@ -25,6 +25,7 @@
 
 #include <aidl/android/media/audio/common/AudioPort.h>
 #include <aidl/android/media/audio/common/AudioPortConfig.h>
+#include <aidl/android/media/audio/common/AudioProductStrategyType.h>
 #include <media/AidlConversionCppNdk.h>
 #include <media/TypeConverter.h>
 #include <media/convert.h>
@@ -59,6 +60,7 @@ using aidl::android::media::audio::common::AudioPortConfig;
 using aidl::android::media::audio::common::AudioPortDeviceExt;
 using aidl::android::media::audio::common::AudioPortExt;
 using aidl::android::media::audio::common::AudioPortMixExt;
+using aidl::android::media::audio::common::AudioProductStrategyType;
 using aidl::android::media::audio::common::AudioProfile;
 using aidl::android::media::audio::common::AudioSource;
 using aidl::android::media::audio::common::AudioStreamType;
@@ -816,4 +818,22 @@ ConversionResult<AudioHalVolumeCurve::CurvePoint> convertCurvePointToAidl(
     }
     return aidlCurvePoint;
 }
+
+std::unordered_map<std::string, int> getLegacyProductStrategyMap() {
+#define STRATEGY_ENTRY(name, id) {"STRATEGY_" #name, static_cast<int>(id)}
+
+    return {STRATEGY_ENTRY(MEDIA, AudioProductStrategyType::MEDIA),
+            STRATEGY_ENTRY(PHONE, AudioProductStrategyType::PHONE),
+            STRATEGY_ENTRY(SONIFICATION, AudioProductStrategyType::SONIFICATION),
+            STRATEGY_ENTRY(SONIFICATION_RESPECTFUL,
+                           AudioProductStrategyType::SONIFICATION_RESPECTFUL),
+            STRATEGY_ENTRY(DTMF, AudioProductStrategyType::DTMF),
+            STRATEGY_ENTRY(ENFORCED_AUDIBLE, AudioProductStrategyType::ENFORCED_AUDIBLE),
+            STRATEGY_ENTRY(CALL_ASSISTANT, AudioProductStrategyType::SYS_RESERVED_CALL_ASSISTANT),
+            STRATEGY_ENTRY(TRANSMITTED_THROUGH_SPEAKER,
+                           AudioProductStrategyType::TRANSMITTED_THROUGH_SPEAKER),
+            STRATEGY_ENTRY(ACCESSIBILITY, AudioProductStrategyType::ACCESSIBILITY)};
+#undef STRATEGY_ENTRY
+}
+
 }  // namespace aidl::android::hardware::audio::core::internal

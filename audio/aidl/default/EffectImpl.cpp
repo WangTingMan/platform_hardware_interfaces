@@ -22,7 +22,10 @@
 #include "effect-impl/EffectTypes.h"
 #include "include/effect-impl/EffectTypes.h"
 
+using aidl::android::hardware::audio::effect::CommandId;
+using aidl::android::hardware::audio::effect::Descriptor;
 using aidl::android::hardware::audio::effect::IEffect;
+using aidl::android::hardware::audio::effect::kDestroyAnyStateSupportedVersion;
 using aidl::android::hardware::audio::effect::kEventFlagDataMqNotEmpty;
 using aidl::android::hardware::audio::effect::kEventFlagNotEmpty;
 using aidl::android::hardware::audio::effect::kReopenSupportedVersion;
@@ -31,13 +34,45 @@ using aidl::android::media::audio::common::PcmType;
 using ::android::hardware::EventFlag;
 
 extern "C" binder_exception_t destroyEffect(const std::shared_ptr<IEffect>& instanceSp) {
-    State state;
-    ndk::ScopedAStatus status = instanceSp->getState(&state);
-    if (!status.isOk() || State::INIT != state) {
+    if (!instanceSp) {
+        LOG(ERROR) << __func__ << " nullptr";
+        return EX_ILLEGAL_ARGUMENT;
+    }
+
+    Descriptor desc;
+    ndk::ScopedAStatus status = instanceSp->getDescriptor(&desc);
+    if (!status.isOk()) {
         LOG(ERROR) << __func__ << " instance " << instanceSp.get()
+                   << " failed to get descriptor, status: " << status.getDescription();
+        return EX_ILLEGAL_STATE;
+    }
+
+    State state;
+    status = instanceSp->getState(&state);
+    if (!status.isOk()) {
+        LOG(ERROR) << __func__ << " " << desc.common.name << " instance " << instanceSp.get()
                    << " in state: " << toString(state) << ", status: " << status.getDescription();
         return EX_ILLEGAL_STATE;
     }
+
+    int effectVersion = 0;
+    if (!instanceSp->getInterfaceVersion(&effectVersion).isOk()) {
+        LOG(WARNING) << __func__ << " " << desc.common.name << " failed to get interface version";
+    }
+
+    if (effectVersion < kDestroyAnyStateSupportedVersion) {
+        if (State::INIT != state) {
+            LOG(ERROR) << __func__ << " " << desc.common.name << " can not destroy instance "
+                       << instanceSp.get() << " in state: " << toString(state);
+            return EX_ILLEGAL_STATE;
+        }
+    } else {
+        instanceSp->command(CommandId::RESET);
+        instanceSp->close();
+    }
+
+    LOG(DEBUG) << __func__ << " " << desc.common.name << " instance " << instanceSp.get()
+               << " destroyed";
     return EX_NONE;
 }
 
@@ -265,7 +300,7 @@ ndk::ScopedAStatus EffectImpl::command(CommandId command) {
                                                                     "CommandIdNotSupported");
     }
     LOG(VERBOSE) << getEffectNameWithVersion() << __func__
-                 << " transfer to state: " << toString(mState);
+                 << " transfer to state: " << toString(mState) << " with " << toString(command);
     return ndk::ScopedAStatus::ok();
 }
 
@@ -357,6 +392,7 @@ void EffectImpl::process() {
         auto outputMQ = mImplContext->getOutputDataFmq();
         auto buffer = mImplContext->getWorkBuffer();
         if (!inputMQ || !outputMQ) {
+            LOG(WARNING) << __func__ << " skip processing with empty FMQs";
             return;
         }
 
@@ -368,6 +404,8 @@ void EffectImpl::process() {
             IEffect::Status status = effectProcessImpl(buffer, buffer, processSamples);
             outputMQ->write(buffer, status.fmqProduced);
             statusMQ->writeBlocking(&status, 1);
+        } else {
+            drainingComplete_l();
         }
     }
 }
@@ -378,6 +416,13 @@ IEffect::Status EffectImpl::effectProcessImpl(float* in, float* out, int samples
         *out++ = *in++;
     }
     return {STATUS_OK, samples, samples};
+}
+
+void EffectImpl::drainingComplete_l() {
+    if (mState != State::DRAINING) return;
+
+    finishDraining();
+    mState = State::IDLE;
 }
 
 }  // namespace aidl::android::hardware::audio::effect

@@ -154,6 +154,11 @@ void check_crl_distribution_points_extension_not_present(X509* certificate) {
 }
 
 void check_attestation_version(uint32_t attestation_version, int32_t aidl_version) {
+    if (get_vendor_api_level() > AVendorSupport_getVendorApiLevelOf(36)) {
+        EXPECT_EQ(attestation_version, (aidl_version * 100));
+        return;
+    }
+
     // Version numbers in attestation extensions should be a multiple of 100.
     EXPECT_EQ(attestation_version % 100, 0);
 
@@ -324,11 +329,21 @@ std::optional<vector<uint8_t>> KeyMintAidlTestBase::getModuleHash() {
 }
 
 /**
- * An API to determine device IDs attestation is required or not,
- * which is mandatory for KeyMint version 2 and first_api_level 33 or greater.
+ * Returns whether support for device ID attestation is required, which is the case if the KeyMint
+ * version is >= 2 and the device first shipped with vendor API level 33+ (since support relies on
+ * ID provisioning done in the factory).
  */
 bool KeyMintAidlTestBase::isDeviceIdAttestationRequired() {
-    return AidlVersion() >= 2 && property_get_int32("ro.vendor.api_level", 0) >= __ANDROID_API_T__;
+    if (!is_gsi_image()) {
+        return AidlVersion() >= 2 && AVendorSupport_getFirstVendorApiLevel() >=
+                                             AVendorSupport_getVendorApiLevelOf(__ANDROID_API_T__);
+    } else {
+        // The device ID properties may not be set properly when testing earlier implementations
+        // under GSI, e.g. `ro.product.<id>` is overridden by the GSI image, but the
+        // `ro.product.vendor.<id>` value (which does survive GSI installation) was not set.
+        return AidlVersion() >= 2 && AVendorSupport_getFirstVendorApiLevel() >=
+                                             AVendorSupport_getVendorApiLevelOf(__ANDROID_API_U__);
+    }
 }
 
 /**
@@ -377,20 +392,6 @@ void KeyMintAidlTestBase::InitializeKeyMint(std::shared_ptr<IKeyMintDevice> keyM
     os_version_ = getOsVersion();
     os_patch_level_ = getOsPatchlevel();
     vendor_patch_level_ = getVendorPatchlevel();
-
-    // TODO(b/369375199): temporary code, remove when apexd -> keystore2 -> KeyMint transmission
-    // of module info happens.
-    {
-        GTEST_LOG_(INFO) << "Setting MODULE_HASH to fake value as fallback";
-        // Ensure that a MODULE_HASH value is definitely present in KeyMint (if it's >= v4).
-        vector<uint8_t> fakeModuleHash = {
-                0xf3, 0xf1, 0x1f, 0xe5, 0x13, 0x05, 0xfe, 0xfa, 0xe9, 0xc3, 0x53,
-                0xef, 0x69, 0xdf, 0x9f, 0xd7, 0x0c, 0x1e, 0xcc, 0x2c, 0x2c, 0x62,
-                0x1f, 0x5e, 0x2c, 0x1d, 0x19, 0xa1, 0xfd, 0xac, 0xa1, 0xb4,
-        };
-        vector<KeyParameter> info = {Authorization(TAG_MODULE_HASH, fakeModuleHash)};
-        keymint_->setAdditionalAttestationInfo(info);
-    }
 }
 
 int32_t KeyMintAidlTestBase::AidlVersion() const {
@@ -720,7 +721,9 @@ ErrorCode KeyMintAidlTestBase::UpdateAad(const string& input) {
                                              {} /* verificationToken */));
 }
 
-ErrorCode KeyMintAidlTestBase::Update(const string& input, string* output) {
+ErrorCode KeyMintAidlTestBase::Update(const string& input, string* output,
+                                      std::optional<HardwareAuthToken> hat,
+                                      std::optional<secureclock::TimeStampToken> time_token) {
     SCOPED_TRACE("Update");
 
     Status result;
@@ -730,7 +733,7 @@ ErrorCode KeyMintAidlTestBase::Update(const string& input, string* output) {
     if (!op_) return ErrorCode::UNEXPECTED_NULL_POINTER;
 
     std::vector<uint8_t> o_put;
-    result = op_->update(vector<uint8_t>(input.begin(), input.end()), {}, {}, &o_put);
+    result = op_->update(vector<uint8_t>(input.begin(), input.end()), hat, time_token, &o_put);
 
     if (result.isOk()) {
         output->append(o_put.begin(), o_put.end());
@@ -1744,7 +1747,7 @@ bool KeyMintAidlTestBase::is_chipset_allowed_km4_strongbox(void) const {
     const string allowed_soc_models[] = {"SM8450", "SM8475", "SM8550", "SXR2230P",
                                          "SM4450", "SM7450", "SM6450"};
 
-    for (const string model : allowed_soc_models) {
+    for (const string& model : allowed_soc_models) {
         if (model.compare(buffer.data()) == 0) {
             GTEST_LOG_(INFO) << "QTI SOC Model " + model + " is allowed SB KM 4.0";
             return true;

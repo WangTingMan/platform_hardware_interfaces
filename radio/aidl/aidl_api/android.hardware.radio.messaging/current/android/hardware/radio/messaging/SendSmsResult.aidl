@@ -33,9 +33,18 @@
 
 package android.hardware.radio.messaging;
 /* @hide */
-@JavaDerive(toString=true) @VintfStability
+@JavaDerive(toString=true) @RustDerive(Clone=true, Eq=true, PartialEq=true) @VintfStability
 parcelable SendSmsResult {
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   int messageRef;
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   String ackPDU;
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   int errorCode;
 }

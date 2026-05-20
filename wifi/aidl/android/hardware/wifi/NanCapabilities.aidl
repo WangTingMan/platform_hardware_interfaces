@@ -16,6 +16,8 @@
 
 package android.hardware.wifi;
 
+import android.hardware.wifi.RttBw;
+
 /**
  * NDP Capabilities response.
  */
@@ -91,8 +93,19 @@ parcelable NanCapabilities {
      * Flag to indicate if High Efficiency is supported.
      */
     boolean supportsHe;
+
     /**
-     * Flag to indicate if NAN pairing is supported.
+     * Flag to indicate if NAN pairing and all associated Aware R4 security features are supported.
+     *
+     * This flag is set to true only if all of the following are supported:
+     * - NAN Pairing (as in Wi-Fi Aware Specification Version 4.0 section 7.6)
+     * - NDP unicast data frame encryption (as in Wi-Fi Aware Specification Version 4.0 section
+     *   7.3.1)
+     * - Group addressed data frame encryption (as in Wi-Fi Aware Specification Version 4.0
+     *   section 7.3.3)
+     * - Management frame protection (as in Wi-Fi Aware Specification Version 4.0 section 7.3.2
+     *   for both unicast and multicast frames)
+     * - Beacon integrity protection (as in Wi-Fi Aware Specification Version 4.0 section 7.3.4)
      */
     boolean supportsPairing;
     /**
@@ -103,4 +116,16 @@ parcelable NanCapabilities {
      * Flag to indicate if NAN suspension is supported.
      */
     boolean supportsSuspension;
+    /**
+     * Flag to indicate if NAN periodic ranging is supported.
+     */
+    boolean supportsPeriodicRanging;
+    /**
+     * Maximum supported bandwidth.
+     */
+    RttBw maxSupportedBandwidth;
+    /**
+     * Maximum number of supported receive chains.
+     */
+    int maxNumRxChainsSupported;
 }

@@ -19,19 +19,23 @@ package android.hardware.radio.messaging;
 /** @hide */
 @VintfStability
 @JavaDerive(toString=true)
+@RustDerive(Clone=true, Eq=true, PartialEq=true)
 parcelable SendSmsResult {
     /**
      * TP-Message-Reference for GSM, and BearerData MessageId for CDMA.
      * See 3GPP2 C.S0015-B, v2.0, table 4.5-1
+     * @deprecated Legacy CDMA is unsupported.
      */
     int messageRef;
     /**
      * Ack PDU or empty string if n/a
+     * @deprecated Legacy CDMA is unsupported.
      */
     String ackPDU;
     /**
      * See 3GPP 27.005, 3.2.5 for GSM/UMTS, 3GPP2 N.S0005 (IS-41C) Table 171 for CDMA.
      * -1 if unknown or not applicable.
+     * @deprecated Legacy CDMA is unsupported.
      */
     int errorCode;
 }

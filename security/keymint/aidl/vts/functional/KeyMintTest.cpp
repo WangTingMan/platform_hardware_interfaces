@@ -2269,10 +2269,19 @@ TEST_P(NewKeyGenerationTest, EcdsaAttestationUniqueId) {
     get_unique_id(app_id, min_date - 1, &unique_id8);
     EXPECT_NE(unique_id, unique_id8);
 
-    // Marking RESET_SINCE_ID_ROTATION should give a different unique ID.
-    vector<uint8_t> unique_id9;
-    get_unique_id(app_id, cert_date, &unique_id9, /* reset_id = */ true);
-    EXPECT_NE(unique_id, unique_id9);
+    // Some StrongBox implementations did not correctly handle RESET_SINCE_ID_ROTATION when
+    // combined with use of an ATTEST_KEY, but this was not previously tested. Tests under GSI
+    // were updated to implicitly use ATTEST_KEYS (because rkp-only status cannot be determined),
+    // uncovering the problem. Skip this test for older implementations in that situation
+    // (cf. b/385800086).
+    int vendor_api_level = get_vendor_api_level();
+    if (!(is_gsi_image() && SecLevel() == SecurityLevel::STRONGBOX &&
+          vendor_api_level < AVendorSupport_getVendorApiLevelOf(__ANDROID_API_V__))) {
+        // Marking RESET_SINCE_ID_ROTATION should give a different unique ID.
+        vector<uint8_t> unique_id9;
+        get_unique_id(app_id, cert_date, &unique_id9, /* reset_id = */ true);
+        EXPECT_NE(unique_id, unique_id9);
+    }
 }
 
 /*
@@ -2281,6 +2290,16 @@ TEST_P(NewKeyGenerationTest, EcdsaAttestationUniqueId) {
  * Verifies that creation of an attested ECDSA key does not include APPLICATION_ID.
  */
 TEST_P(NewKeyGenerationTest, EcdsaAttestationTagNoApplicationId) {
+    int vendor_api_level = get_vendor_api_level();
+    if (is_gsi_image() && SecLevel() == SecurityLevel::STRONGBOX &&
+        vendor_api_level < AVendorSupport_getVendorApiLevelOf(__ANDROID_API_V__)) {
+        // Some StrongBox implementations did not correctly handle missing APPLICATION_ID when
+        // combined with use of an ATTEST_KEY, but this was not previously tested. Tests under
+        // GSI were updated to implicitly use ATTEST_KEYS (because rkp-only status cannot be
+        // determined), uncovering the problem. Skip this test for older implementations in that
+        // situation (cf. b/385800086).
+        GTEST_SKIP() << "Skip test on StrongBox device with vendor-api-level < __ANDROID_API_V__";
+    }
     auto challenge = "hello";
     auto attest_app_id = "foo";
     auto subject = "cert subj 2";
@@ -4579,6 +4598,34 @@ TEST_P(ImportKeyTest, AesSuccess) {
     string ciphertext = EncryptMessage(message, params);
     string plaintext = DecryptMessage(ciphertext, params);
     EXPECT_EQ(message, plaintext);
+}
+
+/*
+ * ImportKeyTest.AesKeyMaterialEncrypted
+ *
+ * Verifies that the keyblob for an imported AES key does not have visible plaintext key material.
+ */
+TEST_P(ImportKeyTest, AesKeyMaterialEncrypted) {
+    string key = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    for (int i = 0; i < 32; i++) {
+        key[i] = static_cast<char>(random() % 256);
+    }
+    ASSERT_EQ(ErrorCode::OK, ImportKey(AuthorizationSetBuilder()
+                                               .Authorization(TAG_NO_AUTH_REQUIRED)
+                                               .AesEncryptionKey(key.size() * 8)
+                                               .EcbMode()
+                                               .Padding(PaddingMode::PKCS7),
+                                       KeyFormat::RAW, key));
+    CheckCryptoParam(TAG_ALGORITHM, Algorithm::AES);
+    CheckCryptoParam(TAG_KEY_SIZE, 256U);
+    CheckOrigin();
+
+    // The keyblob should not contain the plaintext key material.
+    string keyblob(key_blob_.begin(), key_blob_.end());
+    ASSERT_EQ(keyblob.find(key), string::npos)
+            << "keyblob data " << bin2hex(key_blob_) << " contains the raw key material "
+            << bin2hex(std::vector<uint8_t>(key.begin(), key.end()));
 }
 
 /*
@@ -8179,6 +8226,18 @@ TEST_P(GetHardwareInfoTest, GetHardwareInfo) {
     EXPECT_EQ(info, info2);
 }
 
+TEST_P(GetHardwareInfoTest, GetHardwareInfoNonEmptyNames) {
+    KeyMintHardwareInfo info;
+    ASSERT_TRUE(keyMint().getHardwareInfo(&info).isOk());
+    int vendor_api_level = get_vendor_api_level();
+    if (vendor_api_level <= 202504) {
+        GTEST_SKIP() << "Applies only to vendor API level > 202504, but this device is: "
+                     << vendor_api_level;
+    }
+    EXPECT_NE(info.keyMintName, "");
+    EXPECT_NE(info.keyMintAuthorName, "");
+}
+
 INSTANTIATE_KEYMINT_AIDL_TEST(GetHardwareInfoTest);
 
 typedef KeyMintAidlTestBase AddEntropyTest;
@@ -9115,5 +9174,12 @@ int main(int argc, char** argv) {
             }
         }
     }
+    // Some tests rely on information about the state of the system having been received by KeyMint,
+    // so ensure that has happened before running tests.
+    using namespace std::chrono_literals;
+    if (!android::base::WaitForProperty("keystore.module_hash.sent", "true", 30s)) {
+        std::cerr << "Warning: running test before keystore.module_hash.sent is true\n";
+    }
+
     return RUN_ALL_TESTS();
 }

@@ -36,8 +36,8 @@ package android.hardware.vibrator;
 interface IVibrator {
   int getCapabilities();
   void off();
-  void on(in int timeoutMs, in android.hardware.vibrator.IVibratorCallback callback);
-  int perform(in android.hardware.vibrator.Effect effect, in android.hardware.vibrator.EffectStrength strength, in android.hardware.vibrator.IVibratorCallback callback);
+  void on(in int timeoutMs, in @nullable android.hardware.vibrator.IVibratorCallback callback);
+  int perform(in android.hardware.vibrator.Effect effect, in android.hardware.vibrator.EffectStrength strength, in @nullable android.hardware.vibrator.IVibratorCallback callback);
   android.hardware.vibrator.Effect[] getSupportedEffects();
   void setAmplitude(in float amplitude);
   void setExternalControl(in boolean enabled);
@@ -45,25 +45,46 @@ interface IVibrator {
   int getCompositionSizeMax();
   android.hardware.vibrator.CompositePrimitive[] getSupportedPrimitives();
   int getPrimitiveDuration(android.hardware.vibrator.CompositePrimitive primitive);
-  void compose(in android.hardware.vibrator.CompositeEffect[] composite, in android.hardware.vibrator.IVibratorCallback callback);
+  void compose(in android.hardware.vibrator.CompositeEffect[] composite, in @nullable android.hardware.vibrator.IVibratorCallback callback);
   android.hardware.vibrator.Effect[] getSupportedAlwaysOnEffects();
   void alwaysOnEnable(in int id, in android.hardware.vibrator.Effect effect, in android.hardware.vibrator.EffectStrength strength);
   void alwaysOnDisable(in int id);
   float getResonantFrequency();
   float getQFactor();
+  /**
+   * @deprecated This method is deprecated from AIDL v3 and is no longer required to be implemented even if CAP_FREQUENCY_CONTROL capability is reported.
+   */
   float getFrequencyResolution();
+  /**
+   * @deprecated This method is deprecated from AIDL v3 and is no longer required to be implemented even if CAP_FREQUENCY_CONTROL capability is reported.
+   */
   float getFrequencyMinimum();
+  /**
+   * @deprecated This method is deprecated from AIDL v3 and is no longer required to be implemented even if CAP_FREQUENCY_CONTROL capability is reported.
+   */
   float[] getBandwidthAmplitudeMap();
+  /**
+   * @deprecated This method is deprecated from AIDL v3 and is no longer required to be implemented. Use `IVibrator.getPwleV2PrimitiveDurationMaxMillis` instead.
+   */
   int getPwlePrimitiveDurationMax();
+  /**
+   * @deprecated This method is deprecated from AIDL v3 and is no longer required to be implemented. Use `IVibrator.getPwleV2CompositionSizeMax` instead.
+   */
   int getPwleCompositionSizeMax();
+  /**
+   * @deprecated This method is deprecated from AIDL v3 and is no longer required to be implemented.
+   */
   android.hardware.vibrator.Braking[] getSupportedBraking();
-  void composePwle(in android.hardware.vibrator.PrimitivePwle[] composite, in android.hardware.vibrator.IVibratorCallback callback);
-  void performVendorEffect(in android.hardware.vibrator.VendorEffect vendorEffect, in android.hardware.vibrator.IVibratorCallback callback);
-  List<android.hardware.vibrator.PwleV2OutputMapEntry> getPwleV2FrequencyToOutputAccelerationMap();
+  /**
+   * @deprecated This method is deprecated from AIDL v3 and is no longer required to be implemented. Use `IVibrator.composePwleV2` instead.
+   */
+  void composePwle(in android.hardware.vibrator.PrimitivePwle[] composite, in @nullable android.hardware.vibrator.IVibratorCallback callback);
+  void performVendorEffect(in android.hardware.vibrator.VendorEffect vendorEffect, in @nullable android.hardware.vibrator.IVibratorCallback callback);
+  List<android.hardware.vibrator.FrequencyAccelerationMapEntry> getFrequencyToOutputAccelerationMap();
   int getPwleV2PrimitiveDurationMaxMillis();
   int getPwleV2CompositionSizeMax();
   int getPwleV2PrimitiveDurationMinMillis();
-  void composePwleV2(in android.hardware.vibrator.PwleV2Primitive[] composite, in android.hardware.vibrator.IVibratorCallback callback);
+  void composePwleV2(in android.hardware.vibrator.CompositePwleV2 composite, in @nullable android.hardware.vibrator.IVibratorCallback callback);
   const int CAP_ON_CALLBACK = (1 << 0) /* 1 */;
   const int CAP_PERFORM_CALLBACK = (1 << 1) /* 2 */;
   const int CAP_AMPLITUDE_CONTROL = (1 << 2) /* 4 */;

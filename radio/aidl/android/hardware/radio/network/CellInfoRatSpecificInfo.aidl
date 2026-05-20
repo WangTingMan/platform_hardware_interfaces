@@ -26,6 +26,7 @@ import android.hardware.radio.network.CellInfoWcdma;
 /** @hide */
 @VintfStability
 @JavaDerive(toString=true)
+@RustDerive(Clone=true, Eq=true, PartialEq=true)
 union CellInfoRatSpecificInfo {
     /**
      * 3gpp CellInfo types.
@@ -37,6 +38,7 @@ union CellInfoRatSpecificInfo {
     CellInfoNr nr;
     /**
      * 3gpp2 CellInfo types;
+     * @deprecated Legacy CDMA is unsupported.
      */
     CellInfoCdma cdma;
 }

@@ -56,7 +56,7 @@ class LIBBLUETOOTHAUDIOSESSIONAIDL_EXPORTS BluetoothAudioCodecs {
   static std::vector<CodecInfo> GetLeAudioOffloadCodecInfo(
       const SessionType& session_type);
 
-  static std::vector<LeAudioAseConfigurationSetting>
+  static std::vector<std::pair<std::string, LeAudioAseConfigurationSetting>>
   GetLeAudioAseConfigurationSettings();
 
   static std::vector<CodecInfo> GetHfpOffloadCodecInfo();

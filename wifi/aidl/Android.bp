@@ -29,7 +29,7 @@ aidl_interface {
         "android/hardware/wifi/*.aidl",
     ],
     imports: [
-        "android.hardware.wifi.common-V1",
+        "android.hardware.wifi.common-V2",
     ],
     stability: "vintf",
     backend: {
@@ -62,7 +62,11 @@ aidl_interface {
             version: "2",
             imports: ["android.hardware.wifi.common-V1"],
         },
+        {
+            version: "3",
+            imports: ["android.hardware.wifi.common-V2"],
+        },
 
     ],
-    frozen: true,
+    frozen: false,
 }

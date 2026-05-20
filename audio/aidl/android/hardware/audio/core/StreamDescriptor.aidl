@@ -188,6 +188,14 @@ parcelable StreamDescriptor {
          * In the 'DRAINING' state the producer is inactive, the consumer is
          * finishing up on the buffer contents, emptying it up. As soon as it
          * gets empty, the stream transfers itself into the next state.
+         *
+         * Note that "early notify" draining is a more complex procedure
+         * intended for transitioning between two clips. Both 'DRAINING' and
+         * 'DRAIN_PAUSED' states have "sub-states" not visible via the API. See
+         * the details in the 'stream-out-async-sm.gv' state machine
+         * description. In the HAL API V3 this behavior is enabled when the
+         * HAL exposes "aosp.clipTransitionSupport" property, and in the HAL
+         * API V4 it is the default behavior.
          */
         DRAINING = 5,
         /**
@@ -234,9 +242,15 @@ parcelable StreamDescriptor {
         /**
          * Used with output streams only, the HAL module indicates drain
          * completion shortly before all audio data has been consumed in order
-         * to give the client an opportunity to provide data for the next track
+         * to give the client an opportunity to provide data for the next clip
          * for gapless playback. The exact amount of provided time is specific
          * to the HAL implementation.
+         *
+         * In the HAL API V3, the HAL sends two 'onDrainReady' notifications:
+         * one to indicate readiness to receive next clip data, and another when
+         * the previous clip has finished playing. This behavior is enabled when
+         * the HAL exposes "aosp.clipTransitionSupport" property, and in the HAL
+         * API V4 it is the default behavior.
          */
         DRAIN_EARLY_NOTIFY = 2,
     }
@@ -512,6 +526,15 @@ parcelable StreamDescriptor {
          * client still uses the same commands for controlling the audio data
          * exchange and for obtaining current positions and latency from the HAL
          * module.
+         *
+         * @deprecated Since V4, the client uses 'IStreamCommon.createMmapBuffer'
+         * to obtain the MMap shared buffer. The value returned from
+         * 'IModule.open{Input|Output}Stream' is not used. Note that since
+         * it is not allowed to pass an invalid file descriptor in a parcel,
+         * the HAL implementation must still provide some valid file descriptor
+         * in this parcelable when opening a stream. However, the returned file
+         * descriptor is not used by the client. Instead, the client calls
+         * 'IStreamCommon.createMmapBuffer' to obtain the actual shared buffer.
          */
         MmapBufferDescriptor mmap;
     }

@@ -61,12 +61,11 @@ enum RadioError {
      */
     SMS_SEND_FAIL_RETRY = 10,
     /**
-     * Fail to set the location where CDMA subscription shall be retrieved because of SIM or
-     * RUIM card absent
+     * SIM or RUIM card absent
      */
     SIM_ABSENT = 11,
     /**
-     * Fail to find CDMA subscription from specified location
+     * Failed to find subscription from specified location
      */
     SUBSCRIPTION_NOT_AVAILABLE = 12,
     /**
@@ -74,7 +73,7 @@ enum RadioError {
      */
     MODE_NOT_SUPPORTED = 13,
     /**
-     * Command failed becausee recipient is not on FDN list
+     * Command failed because recipient is not on FDN list
      */
     FDN_CHECK_FAILURE = 14,
     /**
@@ -134,7 +133,7 @@ enum RadioError {
      */
     LCE_NOT_SUPPORTED = 36,
     /**
-     * Not sufficieent memory to process the request
+     * Not sufficient memory to process the request
      */
     NO_MEMORY = 37,
     /**
@@ -219,7 +218,7 @@ enum RadioError {
      */
     ENCODING_ERR = 57,
     /**
-     * SMSC addrss specified is invalid
+     * SMSC address specified is invalid
      */
     INVALID_SMSC_ADDRESS = 58,
     /**
@@ -280,7 +279,7 @@ enum RadioError {
     OEM_ERROR_24 = 524,
     OEM_ERROR_25 = 525,
     /**
-     * 1X voice and SMS are not allowed simulteneously.
+     * 1X voice and SMS are not allowed simultaneously.
      */
     SIMULTANEOUS_SMS_AND_CALL_NOT_ALLOWED = 67,
     /**
@@ -294,8 +293,8 @@ enum RadioError {
     BLOCKED_DUE_TO_CALL = 69,
     /**
      * Returned from setRadioPowerResponse when detecting RF HW issues. Some RF Front-End (RFFE)
-     * components like antenna are considered critical for modem to provide telephony service.
-     * This RadioError is used when modem detect such RFFE problem.
+     * components like antennas are considered critical for modem to provide telephony service.
+     * This RadioError is used when modem detects such RFFE problems.
      */
     RF_HARDWARE_ISSUE = 70,
     /**

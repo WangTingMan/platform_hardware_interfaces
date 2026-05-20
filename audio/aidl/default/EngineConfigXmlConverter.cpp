@@ -59,20 +59,6 @@ namespace aidl::android::hardware::audio::core::internal {
 static constexpr char kCapEngineConfigFileName[] =
         "/parameter-framework/Settings/Policy/PolicyConfigurableDomains.xml";
 
-void EngineConfigXmlConverter::initProductStrategyMap() {
-#define STRATEGY_ENTRY(name) {"STRATEGY_" #name, static_cast<int>(AudioProductStrategyType::name)}
-
-    mProductStrategyMap = {STRATEGY_ENTRY(MEDIA),
-                           STRATEGY_ENTRY(PHONE),
-                           STRATEGY_ENTRY(SONIFICATION),
-                           STRATEGY_ENTRY(SONIFICATION_RESPECTFUL),
-                           STRATEGY_ENTRY(DTMF),
-                           STRATEGY_ENTRY(ENFORCED_AUDIBLE),
-                           STRATEGY_ENTRY(TRANSMITTED_THROUGH_SPEAKER),
-                           STRATEGY_ENTRY(ACCESSIBILITY)};
-#undef STRATEGY_ENTRY
-}
-
 ConversionResult<int> EngineConfigXmlConverter::convertProductStrategyNameToAidl(
         const std::string& xsdcProductStrategyName) {
     const auto [it, success] = mProductStrategyMap.insert(
@@ -141,9 +127,6 @@ ConversionResult<AudioAttributes> EngineConfigXmlConverter::convertAudioAttribut
 ConversionResult<AudioHalAttributesGroup> EngineConfigXmlConverter::convertAttributesGroupToAidl(
         const eng_xsd::AttributesGroup& xsdcAttributesGroup) {
     AudioHalAttributesGroup aidlAttributesGroup;
-    static const int kStreamTypeEnumOffset =
-            static_cast<int>(eng_xsd::Stream::AUDIO_STREAM_VOICE_CALL) -
-            static_cast<int>(AudioStreamType::VOICE_CALL);
     aidlAttributesGroup.streamType = xsdcAttributesGroup.hasStreamType()
                                              ? VALUE_OR_FATAL(convertAudioStreamTypeToAidl(
                                                        xsdcAttributesGroup.getStreamType()))
@@ -179,10 +162,17 @@ ConversionResult<AudioHalProductStrategy> EngineConfigXmlConverter::convertProdu
         const eng_xsd::ProductStrategies::ProductStrategy& xsdcProductStrategy) {
     AudioHalProductStrategy aidlProductStrategy;
 
-    aidlProductStrategy.id =
-            VALUE_OR_FATAL(convertProductStrategyIdToAidl(xsdcProductStrategy.getId()));
+    if (xsdcProductStrategy.hasId()) {
+        aidlProductStrategy.id =
+                VALUE_OR_FATAL(convertProductStrategyIdToAidl(xsdcProductStrategy.getId()));
+    } else {
+        aidlProductStrategy.id =
+                VALUE_OR_FATAL(convertProductStrategyNameToAidl(xsdcProductStrategy.getName()));
+    }
     aidlProductStrategy.name = xsdcProductStrategy.getName();
-
+    if (xsdcProductStrategy.hasZoneId()) {
+        aidlProductStrategy.zoneId = xsdcProductStrategy.getZoneId();
+    }
     if (xsdcProductStrategy.hasAttributesGroup()) {
         aidlProductStrategy.attributesGroups = VALUE_OR_FATAL(
                 (convertCollectionToAidl<eng_xsd::AttributesGroup, AudioHalAttributesGroup>(
@@ -237,7 +227,7 @@ AudioHalEngineConfig& EngineConfigXmlConverter::getAidlEngineConfig() {
 }
 
 void EngineConfigXmlConverter::init() {
-    initProductStrategyMap();
+    mProductStrategyMap = getLegacyProductStrategyMap();
     if (getXsdcConfig()->hasProductStrategies()) {
         mAidlEngineConfig.productStrategies = VALUE_OR_FATAL(
                 (convertWrappedCollectionToAidl<eng_xsd::ProductStrategies,

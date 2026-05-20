@@ -107,6 +107,7 @@ typedef enum {
     WIFI_POWER_SCENARIO_ON_BODY_BT_UNFOLDED_CAP = 27,
     WIFI_POWER_SCENARIO_ON_BODY_CELL_ON_UNFOLDED_CAP = 28,
     WIFI_POWER_SCENARIO_ON_BODY_CELL_ON_BT_UNFOLDED_CAP = 29,
+    WIFI_POWER_SCENARIO_ON_BODY_VIDEO_RECORDING = 30,
 } wifi_power_scenario;
 
 typedef enum {
@@ -494,6 +495,9 @@ void wifi_get_error_info(wifi_error err, const char **msg); // return a pointer 
 #define WIFI_FEATURE_ROAMING_MODE_CONTROL   (uint64_t)0x800000000 // Support for configuring roaming mode
 #define WIFI_FEATURE_SET_VOIP_MODE          (uint64_t)0x1000000000 // Support Voip mode setting
 #define WIFI_FEATURE_CACHED_SCAN_RESULTS    (uint64_t)0x2000000000 // Support cached scan result report
+#define WIFI_FEATURE_MLO_SAP (uint64_t)0x4000000000                // Support MLO SoftAp
+#define WIFI_FEATURE_MULTIPLE_MLD_ON_SAP \
+    (uint64_t)0x8000000000  // Support Multiple MLD SoftAp (Bridged Dual 11be SoftAp)
 // Add more features here
 
 #define IS_MASK_SET(mask, flags)        (((flags) & (mask)) == (mask))
@@ -789,10 +793,13 @@ typedef struct {
             wifi_rtt_config[], wifi_rtt_event_handler);
     wifi_error (* wifi_rtt_range_request_v3)(wifi_request_id, wifi_interface_handle, unsigned,
             wifi_rtt_config_v3[], wifi_rtt_event_handler_v3);
+    wifi_error (*wifi_rtt_range_request_v4)(wifi_request_id, wifi_interface_handle, unsigned,
+                                            wifi_rtt_config_v4[], wifi_rtt_event_handler_v4);
     wifi_error (* wifi_rtt_range_cancel)(wifi_request_id,  wifi_interface_handle, unsigned,
             mac_addr[]);
     wifi_error (* wifi_get_rtt_capabilities)(wifi_interface_handle, wifi_rtt_capabilities *);
     wifi_error (* wifi_get_rtt_capabilities_v3)(wifi_interface_handle, wifi_rtt_capabilities_v3 *);
+    wifi_error (*wifi_get_rtt_capabilities_v4)(wifi_interface_handle, wifi_rtt_capabilities_v4*);
     wifi_error (* wifi_rtt_get_responder_info)(wifi_interface_handle iface,
             wifi_rtt_responder *responder_info);
     wifi_error (* wifi_enable_responder)(wifi_request_id id, wifi_interface_handle iface,

@@ -242,6 +242,11 @@ enum StandardMetadataType {
      *
      * The plane layout is a list of stable aidl android.hardware.graphics.common.PlaneLayout's.
      *
+     * A valid PlaneLayout must be queryable regardless of the allocated buffer's usage bits.
+     * See android.hardware.graphics.common.PlaneLayout for the specific fields, some of which
+     * are allowed to be optional/missing such as strideInBytes which may not make sense for
+     * some buffer usages & compression scenarios.
+     *
      * When it is encoded into a byte stream, the total number of PlaneLayouts is written using
      * 8 bytes in little endian. It is followed by each PlaneLayout.
      *
@@ -282,7 +287,7 @@ enum StandardMetadataType {
      * When it is encoded into a byte stream, the total number of Rects is written using
      * 8 bytes in little endian. It is followed by each Rect.
      *
-     * To encode a Rect, write the following fields in this order each as 8 bytes in little endian:
+     * To encode a Rect, write the following fields in this order each as 4 bytes in little endian:
      * left, top, right and bottom.
      */
     CROP = 16,

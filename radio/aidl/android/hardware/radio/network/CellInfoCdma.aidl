@@ -23,8 +23,12 @@ import android.hardware.radio.network.EvdoSignalStrength;
 /** @hide */
 @VintfStability
 @JavaDerive(toString=true)
+@RustDerive(Clone=true, Eq=true, PartialEq=true)
 parcelable CellInfoCdma {
+    /** @deprecated Legacy CDMA is unsupported. */
     CellIdentityCdma cellIdentityCdma;
+    /** @deprecated Legacy CDMA is unsupported. */
     CdmaSignalStrength signalStrengthCdma;
+    /** @deprecated Legacy CDMA is unsupported. */
     EvdoSignalStrength signalStrengthEvdo;
 }

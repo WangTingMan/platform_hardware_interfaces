@@ -33,12 +33,13 @@
 
 package android.hardware.radio.ims;
 /* @hide */
-@JavaDerive(toString=true) @SuppressWarnings(value={"redundant-name"}) @VintfStability
+@JavaDerive(toString=true) @RustDerive(Clone=true, Eq=true, PartialEq=true) @SuppressWarnings(value={"redundant-name"}) @VintfStability
 parcelable ImsRegistration {
   android.hardware.radio.ims.ImsRegistrationState regState = android.hardware.radio.ims.ImsRegistrationState.NOT_REGISTERED;
   android.hardware.radio.AccessNetwork accessNetworkType = android.hardware.radio.AccessNetwork.UNKNOWN;
   android.hardware.radio.ims.SuggestedAction suggestedAction = android.hardware.radio.ims.SuggestedAction.NONE;
   int capabilities;
+  int throttlingTimeSec;
   const int IMS_MMTEL_CAPABILITY_NONE = 0;
   const int IMS_MMTEL_CAPABILITY_VOICE = (1 << 0) /* 1 */;
   const int IMS_MMTEL_CAPABILITY_VIDEO = (1 << 1) /* 2 */;

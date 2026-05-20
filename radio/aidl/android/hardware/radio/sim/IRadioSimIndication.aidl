@@ -30,7 +30,7 @@ import android.hardware.radio.sim.SimRefreshResult;
 oneway interface IRadioSimIndication {
     /**
      * Indicates that the modem requires the Carrier info for IMSI/IMPI encryption. This might
-     * happen when the modem restarts or for some reason it's cache has been invalidated.
+     * happen when the modem restarts or for some reason its cache has been invalidated.
      *
      * @param type Type of radio indication
      */
@@ -41,6 +41,7 @@ oneway interface IRadioSimIndication {
      *
      * @param type Type of radio indication
      * @param cdmaSource New CdmaSubscriptionSource
+     * @deprecated Legacy CDMA is unsupported.
      */
     void cdmaSubscriptionSourceChanged(
             in RadioIndicationType type, in CdmaSubscriptionSource cdmaSource);
@@ -84,7 +85,7 @@ oneway interface IRadioSimIndication {
     void simStatusChanged(in RadioIndicationType type);
 
     /**
-     * Indicates when SIM notifies applcations some event happens.
+     * Indicates when SIM notifies applications some event happens.
      *
      * @param type Type of radio indication
      * @param cmd SAT/USAT commands or responses sent by ME to SIM or commands handled by ME,

@@ -123,6 +123,8 @@ oneway interface IRadioSim {
      * Response function is IRadioSimResponse.getCdmaSubscriptionResponse()
      *
      * This is available when android.hardware.telephony.cdma is defined.
+     *
+     * @deprecated Legacy CDMA is unsupported.
      */
     void getCdmaSubscription(in int serial);
 
@@ -134,6 +136,8 @@ oneway interface IRadioSim {
      * Response function is IRadioSimResponse.getCdmaSubscriptionSourceResponse()
      *
      * This is available when android.hardware.telephony.cdma is defined.
+     *
+     * @deprecated Legacy CDMA is unsupported.
      */
     void getCdmaSubscriptionSource(in int serial);
 
@@ -255,7 +259,7 @@ oneway interface IRadioSim {
 
     /**
      * Request APDU exchange on the basic channel. This command reflects TS 27.007
-     * "generic SIM access" operation (+CSIM). The modem must ensure proper function of GSM/CDMA,
+     * "generic SIM access" operation (+CSIM). The modem must ensure proper function of GSM,
      * and filter commands appropriately. It must filter channel management and SELECT by DF
      * name commands. "sessionId" field is always 0 (for aid="") and may be ignored.
      *
@@ -385,7 +389,7 @@ oneway interface IRadioSim {
 
     /**
      * Provide Carrier specific information to the modem that must be used to encrypt the IMSI and
-     * IMPI. Sent by the framework during boot, carrier switch and everytime the framework receives
+     * IMPI. Sent by the framework during boot, carrier switch and every time the framework receives
      * a new certificate.
      *
      * @param serial Serial number of request.
@@ -406,6 +410,8 @@ oneway interface IRadioSim {
      * Response function is IRadioSimResponse.setCdmaSubscriptionSourceResponse()
      *
      * This is available when android.hardware.telephony.cdma is defined.
+     *
+     * @deprecated Legacy CDMA is unsupported.
      */
     void setCdmaSubscriptionSource(in int serial, in CdmaSubscriptionSource cdmaSub);
 
@@ -479,12 +485,15 @@ oneway interface IRadioSim {
      * Response function is IRadioSimResponse.setUiccSubscriptionResponse()
      *
      * This is available when android.hardware.telephony.subscription is defined.
+     *
+     * @deprecated Android Telephony framework doesn't use this.
      */
     void setUiccSubscription(in int serial, in SelectUiccSub uiccSub);
 
     /**
      * Supplies ICC PIN2. Only called following operation where SIM_PIN2 was returned as a failure
-     * from a previous operation.
+     * from a previous operation. If the supplied PIN2 is empty, this should just query the number
+     * of retries.
      *
      * @param serial Serial number of request.
      * @param pin2 PIN2 value
@@ -497,7 +506,8 @@ oneway interface IRadioSim {
     void supplyIccPin2ForApp(in int serial, in String pin2, in String aid);
 
     /**
-     * Supplies ICC PIN. Only called if CardStatus has AppState.PIN state
+     * Supplies ICC PIN. Only called if CardStatus has AppState.PIN state. If the supplied PIN is
+     * empty, this should just query the number of retries.
      *
      * @param serial Serial number of request.
      * @param pin PIN value
@@ -510,7 +520,8 @@ oneway interface IRadioSim {
     void supplyIccPinForApp(in int serial, in String pin, in String aid);
 
     /**
-     * Supplies ICC PUK2 and new PIN2.
+     * Supplies ICC PUK2 and new PIN2. If the supplied PUK2 is empty, this should just query the
+     * number of retries.
      *
      * @param serial Serial number of request.
      * @param puk2 PUK2 value
@@ -524,7 +535,8 @@ oneway interface IRadioSim {
     void supplyIccPuk2ForApp(in int serial, in String puk2, in String pin2, in String aid);
 
     /**
-     * Supplies ICC PUK and new PIN.
+     * Supplies ICC PUK and new PIN. If the supplied PUK is empty, this should just query the
+     * number of retries.
      *
      * @param serial Serial number of request.
      * @param puk PUK value
@@ -575,7 +587,7 @@ oneway interface IRadioSim {
      * Close a previously opened logical channel. This command reflects TS 27.007
      * "close logical channel" operation (+CCHC).
      *
-     * Per spec SGP.22 V3.0, ES10 commands needs to be sent over command port of MEP-A. In order
+     * Per spec SGP.22 V3.0, ES10 commands need to be sent over command port of MEP-A. In order
      * to close proper logical channel, should pass information about whether the logical channel
      * was opened for sending ES10 commands or not.
      *

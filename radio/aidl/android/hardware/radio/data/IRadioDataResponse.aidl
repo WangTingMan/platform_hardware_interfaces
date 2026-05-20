@@ -29,7 +29,7 @@ import android.hardware.radio.data.SlicingConfig;
 oneway interface IRadioDataResponse {
     /**
      * Acknowledge the receipt of radio request sent to the vendor. This must be sent only for
-     * radio request which take long time to respond. For more details, refer
+     * radio requests which take a long time to respond. For more details, refer
      * https://source.android.com/devices/tech/connect/ril.html
      *
      * @param serial Serial no. of the request whose acknowledgement is sent.
@@ -199,7 +199,7 @@ oneway interface IRadioDataResponse {
      *   RadioError:OP_NOT_ALLOWED_DURING_VOICE_CALL
      *   RadioError:INVALID_ARGUMENTS
      *   RadioError:INTERNAL_ERR
-     *   RadioError:NO_RESOURCES if the vendor is unable handle due to resources are full.
+     *   RadioError:NO_RESOURCES if the vendor is unable to handle due to resources being full.
      *   RadioError:SIM_ABSENT
      */
     void setupDataCallResponse(in RadioResponseInfo info, in SetupDataCallResult dcResponse);
@@ -240,4 +240,43 @@ oneway interface IRadioDataResponse {
      *   RadioError:INVALID_ARGUMENTS
      */
     void stopKeepaliveResponse(in RadioResponseInfo info);
+
+    /**
+     * @param info Response info struct containing response type, serial no. and error
+     *
+     * Valid errors returned:
+     *   RadioError:REQUEST_NOT_SUPPORTED when android.hardware.telephony.ims is not defined
+     *   RadioError:NONE
+     *   RadioError:RADIO_NOT_AVAILABLE
+     *   RadioError:INTERNAL_ERR
+     *   RadioError:NO_RESOURCES
+     *   RadioError:INVALID_CALL_ID
+     */
+    void setUserDataEnabledResponse(in RadioResponseInfo info);
+
+    /**
+     * @param info Response info struct containing response type, serial no. and error
+     *
+     * Valid errors returned:
+     *   RadioError:REQUEST_NOT_SUPPORTED when android.hardware.telephony.ims is not defined
+     *   RadioError:NONE
+     *   RadioError:RADIO_NOT_AVAILABLE
+     *   RadioError:INTERNAL_ERR
+     *   RadioError:NO_RESOURCES
+     *   RadioError:INVALID_CALL_ID
+     */
+    void setUserDataRoamingEnabledResponse(in RadioResponseInfo info);
+
+    /**
+     * @param info Response info struct containing response type, serial no. and error
+     *
+     * Valid errors returned:
+     *   RadioError:REQUEST_NOT_SUPPORTED when android.hardware.telephony.data is not defined
+     *   RadioError:NONE
+     *   RadioError:RADIO_NOT_AVAILABLE
+     *   RadioError:INTERNAL_ERR
+     *   RadioError:NO_RESOURCES
+     *   RadioError:INVALID_CALL_ID
+     */
+    void notifyImsDataNetworkResponse(in RadioResponseInfo info);
 }

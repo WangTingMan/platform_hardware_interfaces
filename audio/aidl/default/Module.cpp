@@ -34,6 +34,7 @@
 #include "core-impl/SoundDose.h"
 #include "core-impl/utils.h"
 
+#include <cutils/memory.h>
 #ifdef ERROR
 #undef ERROR
 #endif
@@ -266,27 +267,36 @@ ndk::ScopedAStatus Module::createStreamContext(
     }
 #ifndef _MSC_VER
     const auto& flags = portConfigIt->flags.value();
-    StreamContext::DebugParameters params{
-            mDebug.streamTransientStateDelayMs, mVendorDebug.forceTransientBurst,
-            mVendorDebug.forceSynchronousDrain, mVendorDebug.forceDrainToDraining};
-    std::unique_ptr<StreamContext::DataMQ> dataMQ = nullptr;
-    std::shared_ptr<IStreamCallback> streamAsyncCallback = nullptr;
+    StreamContext::DebugParameters params{mDebug.streamTransientStateDelayMs,
+                                          mVendorDebug.forceTransientBurst,
+                                          mVendorDebug.forceSynchronousDrain};
     std::shared_ptr<ISoundDose> soundDose;
     if (!getSoundDose(&soundDose).isOk()) {
         LOG(ERROR) << __func__ << ": could not create sound dose instance";
         return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
     }
-    if (!hasMmapFlag(flags)) {
-        dataMQ = std::make_unique<StreamContext::DataMQ>(frameSize * in_bufferSizeFrames);
-        streamAsyncCallback = asyncCallback;
+    StreamContext temp;
+    if (hasMmapFlag(flags)) {
+        MmapBufferDescriptor mmapDesc;
+        RETURN_STATUS_IF_ERROR(
+                createMmapBuffer(*portConfigIt, in_bufferSizeFrames, frameSize, &mmapDesc));
+        temp = StreamContext(
+                std::make_unique<StreamContext::CommandMQ>(1, true /*configureEventFlagWord*/),
+                std::make_unique<StreamContext::ReplyMQ>(1, true /*configureEventFlagWord*/),
+                portConfigIt->format.value(), portConfigIt->channelMask.value(),
+                portConfigIt->sampleRate.value().value, flags, nominalLatencyMs,
+                portConfigIt->ext.get<AudioPortExt::mix>().handle, std::move(mmapDesc),
+                outEventCallback, mSoundDose.getInstance(), params);
+    } else {
+        temp = StreamContext(
+                std::make_unique<StreamContext::CommandMQ>(1, true /*configureEventFlagWord*/),
+                std::make_unique<StreamContext::ReplyMQ>(1, true /*configureEventFlagWord*/),
+                portConfigIt->format.value(), portConfigIt->channelMask.value(),
+                portConfigIt->sampleRate.value().value, flags, nominalLatencyMs,
+                portConfigIt->ext.get<AudioPortExt::mix>().handle,
+                std::make_unique<StreamContext::DataMQ>(frameSize * in_bufferSizeFrames),
+                asyncCallback, outEventCallback, mSoundDose.getInstance(), params);
     }
-    StreamContext temp(
-            std::make_unique<StreamContext::CommandMQ>(1, true /*configureEventFlagWord*/),
-            std::make_unique<StreamContext::ReplyMQ>(1, true /*configureEventFlagWord*/),
-            portConfigIt->format.value(), portConfigIt->channelMask.value(),
-            portConfigIt->sampleRate.value().value, flags, nominalLatencyMs,
-            portConfigIt->ext.get<AudioPortExt::mix>().handle, std::move(dataMQ),
-            streamAsyncCallback, outEventCallback, mSoundDose.getInstance(), params);
     if (temp.isValid()) {
         *out_context = std::move(temp);
     } else {
@@ -456,9 +466,10 @@ ndk::ScopedAStatus Module::calculateBufferSizeFrames(
     return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
 }
 
-ndk::ScopedAStatus Module::createMmapBuffer(
-        const ::aidl::android::hardware::audio::core::StreamContext& context __unused,
-        ::aidl::android::hardware::audio::core::StreamDescriptor* desc __unused) {
+ndk::ScopedAStatus Module::createMmapBuffer(const AudioPortConfig& portConfig __unused,
+                                            int32_t bufferSizeFrames __unused,
+                                            int32_t frameSizeBytes __unused,
+                                            MmapBufferDescriptor* desc __unused) {
     LOG(ERROR) << __func__ << ": " << mType << ": is not implemented";
     return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
 }
@@ -672,6 +683,25 @@ ndk::ScopedAStatus Module::updateStreamsConnectedState(const AudioPatch& oldPatc
     }
 
     return ndk::ScopedAStatus::ok();
+}
+
+binder_status_t Module::dump(int fd, const char** args, uint32_t numArgs) {
+    if (::aidl::android::hardware::audio::common::hasArgument(
+                args, numArgs,
+                ::aidl::android::hardware::audio::common::kDumpFromAudioServerArgument)) {
+        std::ostringstream s;
+        s << mType;
+        // Not needed in the case of a dedicated module dump.
+        dprintf(fd, "\n[Module %s] ", s.str().c_str());
+    }
+    dprintf(fd, "Stream dumps:\n");
+    for (const auto& portConfig : getConfig().portConfigs) {
+        if (portConfig.ext.getTag() == AudioPortExt::Tag::mix) {
+            getStreams().dump(portConfig.id, fd, args, numArgs);
+        }
+    }
+    dprintf(fd, "\n");
+    return STATUS_OK;
 }
 
 ndk::ScopedAStatus Module::setModuleDebug(
@@ -1015,10 +1045,24 @@ ndk::ScopedAStatus Module::getAudioRoutesForAudioPort(int32_t in_portId,
     return ndk::ScopedAStatus::ok();
 }
 
+ndk::ScopedAStatus Module::validateMetadataAttributeTags(const std::vector<std::string>& tags) {
+    for (auto& tag : tags) {
+        if (!common::isVendorExtension(tag)) {
+            LOG(ERROR) << __func__ << ": " << mType << ": metadata attribute tag " << tag
+                       << " is invalid.";
+            return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
+        }
+    }
+    return ndk::ScopedAStatus::ok();
+}
+
 ndk::ScopedAStatus Module::openInputStream(const OpenInputStreamArguments& in_args,
                                            OpenInputStreamReturn* _aidl_return) {
     LOG(DEBUG) << __func__ << ": " << mType << ": port config id " << in_args.portConfigId
                << ", buffer size " << in_args.bufferSizeFrames << " frames";
+    for (const auto& track : in_args.sinkMetadata.tracks) {
+        RETURN_STATUS_IF_ERROR(validateMetadataAttributeTags(track.tags));
+    }
     AudioPort* port = nullptr;
     RETURN_STATUS_IF_ERROR(findPortIdForNewStream(in_args.portConfigId, &port));
     if (port->flags.getTag() != AudioIoFlags::Tag::input) {
@@ -1031,9 +1075,6 @@ ndk::ScopedAStatus Module::openInputStream(const OpenInputStreamArguments& in_ar
     RETURN_STATUS_IF_ERROR(createStreamContext(in_args.portConfigId, in_args.bufferSizeFrames,
                                                nullptr, nullptr, &context));
     context.fillDescriptor(&_aidl_return->desc);
-    if (hasMmapFlag(context.getFlags())) {
-        RETURN_STATUS_IF_ERROR(createMmapBuffer(context, &_aidl_return->desc));
-    }
     std::shared_ptr<StreamIn> stream;
     RETURN_STATUS_IF_ERROR(createInputStream(std::move(context), in_args.sinkMetadata,
                                              getMicrophoneInfos(), &stream));
@@ -1056,6 +1097,9 @@ ndk::ScopedAStatus Module::openOutputStream(const OpenOutputStreamArguments& in_
     LOG(DEBUG) << __func__ << ": " << mType << ": port config id " << in_args.portConfigId
                << ", has offload info? " << (in_args.offloadInfo.has_value()) << ", buffer size "
                << in_args.bufferSizeFrames << " frames";
+    for (const auto& track : in_args.sourceMetadata.tracks) {
+        RETURN_STATUS_IF_ERROR(validateMetadataAttributeTags(track.tags));
+    }
     AudioPort* port = nullptr;
     RETURN_STATUS_IF_ERROR(findPortIdForNewStream(in_args.portConfigId, &port));
     if (port->flags.getTag() != AudioIoFlags::Tag::output) {
@@ -1083,9 +1127,6 @@ ndk::ScopedAStatus Module::openOutputStream(const OpenOutputStreamArguments& in_
                                                isNonBlocking ? in_args.callback : nullptr,
                                                in_args.eventCallback, &context));
     context.fillDescriptor(&_aidl_return->desc);
-    if (hasMmapFlag(context.getFlags())) {
-        RETURN_STATUS_IF_ERROR(createMmapBuffer(context, &_aidl_return->desc));
-    }
     std::shared_ptr<StreamOut> stream;
     RETURN_STATUS_IF_ERROR(createOutputStream(std::move(context), in_args.sourceMetadata,
                                               in_args.offloadInfo, &stream));
@@ -1280,6 +1321,15 @@ ndk::ScopedAStatus Module::setAudioPortConfigImpl(
                    << ": requested port config points to non-existent portId " << portId;
         return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
     }
+
+    if (portIt->ext.getTag() == AudioPortExt::Tag::device &&
+        !portIt->ext.get<AudioPortExt::Tag::device>().device.type.connection.empty() &&
+        mConnectedDevicePorts.find(portId) == mConnectedDevicePorts.end()) {
+        LOG(ERROR) << __func__ << ": " << mType << ": requested portId " << portId
+                   << " is not connected to an external device (is it a template port?).";
+        return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
+    }
+
     if (existing != configs.end()) {
         *out_suggested = *existing;
     } else {
@@ -1415,7 +1465,6 @@ ndk::ScopedAStatus Module::setAudioPortConfigImpl(
 }
 
 bool Module::setAudioPortConfigGain(const AudioPort& port, const AudioGainConfig& gainRequested) {
-    auto& ports = getConfig().ports;
     if (gainRequested.index < 0 || gainRequested.index >= (int)port.gains.size()) {
         LOG(ERROR) << __func__ << ": gains for port " << port.id << " is undefined";
         return false;
@@ -1480,6 +1529,8 @@ ndk::ScopedAStatus Module::resetAudioPatch(int32_t in_patchId) {
 
 ndk::ScopedAStatus Module::resetAudioPortConfig(int32_t in_portConfigId) {
     auto& configs = getConfig().portConfigs;
+    LOG(DEBUG) << __func__ << ": " << mType << ": in_portConfigId " << in_portConfigId
+               << " configs size: " << configs.size();
     auto configIt = findById<AudioPortConfig>(configs, in_portConfigId);
     if (configIt != configs.end()) {
         if (mStreams.count(in_portConfigId) != 0) {
@@ -1612,7 +1663,7 @@ ndk::ScopedAStatus Module::generateHwAvSyncId(int32_t* _aidl_return) {
 
 const std::string Module::VendorDebug::kForceTransientBurstName = "aosp.forceTransientBurst";
 const std::string Module::VendorDebug::kForceSynchronousDrainName = "aosp.forceSynchronousDrain";
-const std::string Module::VendorDebug::kForceDrainToDrainingName = "aosp.forceDrainToDraining";
+const std::string Module::kClipTransitionSupportName = "aosp.clipTransitionSupport";
 
 ndk::ScopedAStatus Module::getVendorParameters(const std::vector<std::string>& in_ids,
                                                std::vector<VendorParameter>* _aidl_return) {
@@ -1627,10 +1678,10 @@ ndk::ScopedAStatus Module::getVendorParameters(const std::vector<std::string>& i
             VendorParameter forceSynchronousDrain{.id = id};
             forceSynchronousDrain.ext.setParcelable(Boolean{mVendorDebug.forceSynchronousDrain});
             _aidl_return->push_back(std::move(forceSynchronousDrain));
-        } else if (id == VendorDebug::kForceDrainToDrainingName) {
-            VendorParameter forceDrainToDraining{.id = id};
-            forceDrainToDraining.ext.setParcelable(Boolean{mVendorDebug.forceDrainToDraining});
-            _aidl_return->push_back(std::move(forceDrainToDraining));
+        } else if (id == kClipTransitionSupportName) {
+            VendorParameter clipTransitionSupport{.id = id};
+            clipTransitionSupport.ext.setParcelable(Boolean{true});
+            _aidl_return->push_back(std::move(clipTransitionSupport));
         } else {
             allParametersKnown = false;
             LOG(VERBOSE) << __func__ << ": " << mType << ": unrecognized parameter \"" << id << "\"";
@@ -1669,10 +1720,6 @@ ndk::ScopedAStatus Module::setVendorParameters(const std::vector<VendorParameter
             }
         } else if (p.id == VendorDebug::kForceSynchronousDrainName) {
             if (!extractParameter<Boolean>(p, &mVendorDebug.forceSynchronousDrain)) {
-                return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
-            }
-        } else if (p.id == VendorDebug::kForceDrainToDrainingName) {
-            if (!extractParameter<Boolean>(p, &mVendorDebug.forceDrainToDraining)) {
                 return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
             }
         } else {

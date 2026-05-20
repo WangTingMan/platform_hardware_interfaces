@@ -27,15 +27,19 @@ aidl_interface {
     vendor_available: true,
     srcs: ["android/hardware/nfc/*.aidl"],
     stability: "vintf",
-    frozen: false,
+    frozen: true,
     backend: {
         cpp: {
             enabled: false,
         },
         java: {
-            enabled: false,
+            enabled: true,
             sdk_version: "module_current",
             min_sdk_version: "35",
+            apex_available: [
+                "//apex_available:platform",
+                "com.android.nfcservices",
+            ],
         },
         ndk: {
             enabled: true,
@@ -54,6 +58,11 @@ aidl_interface {
             version: "1",
             imports: [],
         },
+        {
+            version: "2",
+            imports: [],
+        },
+
     ],
 
 }

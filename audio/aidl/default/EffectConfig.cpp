@@ -106,6 +106,7 @@ std::vector<std::reference_wrapper<const tinyxml2::XMLElement>> EffectConfig::ge
 }
 
 bool EffectConfig::resolveLibrary(const std::string& path, std::string* resolvedPath) {
+#ifdef __ANDROID_APEX__
     if constexpr (__ANDROID_VENDOR_API__ >= 202404) {
         AApexInfo *apexInfo;
         if (AApexInfo_create(&apexInfo) == AAPEXINFO_OK) {
@@ -122,6 +123,7 @@ bool EffectConfig::resolveLibrary(const std::string& path, std::string* resolved
     } else {
         LOG(DEBUG) << __func__ << " libapexsupport is not supported";
     }
+#endif
 
     // If audio effects libs are not in vendor apex, locate them in kEffectLibPath
     for (auto* libraryDirectory : kEffectLibPath) {
@@ -309,6 +311,7 @@ bool EffectConfig::findUuid(const std::pair<std::string, struct EffectLibraries>
     V("downmix", Downmix)                                  \
     V("dynamics_processing", DynamicsProcessing)           \
     V("equalizer", Equalizer)                              \
+    V("eraser", Eraser)                                    \
     V("extensioneffect", Extension)                        \
     V("haptic_generator", HapticGenerator)                 \
     V("loudness_enhancer", LoudnessEnhancer)               \

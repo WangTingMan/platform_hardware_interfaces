@@ -43,6 +43,8 @@ std::shared_ptr<IWifiApIface> getWifiApIface(const char* instance_name);
 std::shared_ptr<IWifiApIface> getWifiApIface(std::shared_ptr<IWifiChip> wifi_chip);
 std::shared_ptr<IWifiApIface> getBridgedWifiApIface(const char* instance_name);
 std::shared_ptr<IWifiApIface> getBridgedWifiApIface(std::shared_ptr<IWifiChip> wifi_chip);
+std::shared_ptr<IWifiApIface> getWifiApOrBridgedApIface(std::shared_ptr<IWifiChip> wifi_chip,
+                                                        IWifiChip::ApIfaceParams params);
 // Configure the chip in a mode to support the creation of the provided iface type.
 bool configureChipToSupportConcurrencyType(const std::shared_ptr<IWifiChip>& wifi_chip,
                                            IfaceConcurrencyType type, int* configured_mode_id);
@@ -54,6 +56,13 @@ void stopWifiService(const char* instance_name);
 int32_t getChipFeatureSet(const std::shared_ptr<IWifiChip>& wifi_chip);
 bool checkStatusCode(ndk::ScopedAStatus* status, WifiStatusCode expected_code);
 bool isAidlServiceAvailable(const char* instance_name);
+// Check and update the Wifi framework state.
+bool isWifiFrameworkEnabled();
+void setWifiFrameworkEnabled(bool enable);
 // Generate test vendor data.
 std::vector<OuiKeyedData> generateOuiKeyedDataList(int size);
 std::optional<std::vector<std::optional<OuiKeyedData>>> generateOuiKeyedDataListOptional(int size);
+
+// Generate test ApIfaceParams
+IWifiChip::ApIfaceParams generateApIfaceParams(IfaceConcurrencyType type, bool uses_mlo,
+                                               int oui_size);

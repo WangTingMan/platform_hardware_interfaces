@@ -3472,7 +3472,6 @@ TEST_P(CameraHidlTest, configureConcurrentStreamsAvailableOutputs) {
     for (const auto& cameraDeviceIds : concurrentDeviceCombinations) {
         std::vector<CameraIdAndStreamCombination> cameraIdsAndStreamCombinations;
         std::vector<CameraTestInfo> cameraTestInfos;
-        size_t i = 0;
         for (const auto& id : cameraDeviceIds) {
             CameraTestInfo cti;
             Return<void> ret;
@@ -3530,7 +3529,6 @@ TEST_P(CameraHidlTest, configureConcurrentStreamsAvailableOutputs) {
             cameraIdAndStreamCombination.cameraId = id;
             cameraIdAndStreamCombination.streamConfiguration = cti.config3_4;
             cameraIdsAndStreamCombinations.push_back(cameraIdAndStreamCombination);
-            i++;
             cameraTestInfos.push_back(cti);
         }
         // Now verify that concurrent streams are supported
@@ -8715,25 +8713,14 @@ void CameraHidlTest::setupPreviewWindow(
     ASSERT_NE(nullptr, bufferItemConsumer);
     ASSERT_NE(nullptr, bufferHandler);
 
-#if COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
-    *bufferItemConsumer = new BufferItemConsumer(
-            GraphicBuffer::USAGE_HW_TEXTURE);  // Use GLConsumer default usage flags
-#else
-    sp<IGraphicBufferProducer> producer;
-    sp<IGraphicBufferConsumer> consumer;
-    BufferQueue::createBufferQueue(&producer, &consumer);
-    *bufferItemConsumer = new BufferItemConsumer(consumer,
-            GraphicBuffer::USAGE_HW_TEXTURE); //Use GLConsumer default usage flags
-#endif  // COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
+    sp<Surface> surface;
+    std::tie(*bufferItemConsumer, surface) =
+            BufferItemConsumer::create(GraphicBuffer::USAGE_HW_TEXTURE);
+
     ASSERT_NE(nullptr, (*bufferItemConsumer).get());
     *bufferHandler = new BufferItemHander(*bufferItemConsumer);
     ASSERT_NE(nullptr, (*bufferHandler).get());
     (*bufferItemConsumer)->setFrameAvailableListener(*bufferHandler);
-#if COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
-    sp<Surface> surface = (*bufferItemConsumer)->getSurface();
-#else
-    sp<Surface> surface = new Surface(producer);
-#endif  // COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
     sp<PreviewWindowCb> previewCb = new PreviewWindowCb(surface);
 
     auto rc = device->setPreviewWindow(previewCb);

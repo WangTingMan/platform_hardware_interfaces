@@ -28,8 +28,11 @@
 #include <sys/stat.h>
 #include <atomic>
 #include <condition_variable>
+#include <map>
+#include <memory>
 #include <set>
 #include <thread>
+#include <vector>
 
 #include "Demux.h"
 #include "Dvr.h"
@@ -231,7 +234,8 @@ class Filter : public BnFilter {
     ::ndk::ScopedAStatus createShareMemMediaEvents(vector<int8_t>& output);
     bool sameFile(int fd1, int fd2);
 
-    void createMediaEvent(vector<DemuxFilterEvent>&, bool isAudioPresentation);
+    void createMediaEvent(vector<DemuxFilterEvent>&, bool isAudioPresentation,
+                          int indexInDataGroup);
     void createTsRecordEvent(vector<DemuxFilterEvent>&);
     void createMmtpRecordEvent(vector<DemuxFilterEvent>&);
     void createSectionEvent(vector<DemuxFilterEvent>&);

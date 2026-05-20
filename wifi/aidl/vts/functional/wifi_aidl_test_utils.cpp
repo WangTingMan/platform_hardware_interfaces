@@ -245,6 +245,15 @@ void stopWifiService(const char* instance_name) {
     }
 }
 
+bool isWifiFrameworkEnabled() {
+    return testing::checkSubstringInCommandOutput("/system/bin/cmd wifi status", "Wifi is enabled");
+}
+
+void setWifiFrameworkEnabled(bool enable) {
+    const char* toggleCommand = enable ? "svc wifi enable" : "svc wifi disable";
+    std::system(toggleCommand);
+}
+
 int32_t getChipFeatureSet(const std::shared_ptr<IWifiChip>& wifi_chip) {
     if (!wifi_chip.get()) {
         return 0;
@@ -275,4 +284,29 @@ std::optional<std::vector<std::optional<OuiKeyedData>>> generateOuiKeyedDataList
         dataList.push_back(generateOuiKeyedDataOptional(i + 1));
     }
     return std::optional<std::vector<std::optional<OuiKeyedData>>>{dataList};
+}
+
+IWifiChip::ApIfaceParams generateApIfaceParams(IfaceConcurrencyType type, bool uses_mlo,
+                                               int oui_size) {
+    IWifiChip::ApIfaceParams params;
+    params.ifaceType = type;
+    params.usesMlo = uses_mlo;
+    params.vendorData = generateOuiKeyedDataListOptional(oui_size);
+    return params;
+}
+
+std::shared_ptr<IWifiApIface> getWifiApOrBridgedApIface(std::shared_ptr<IWifiChip> wifi_chip,
+                                                        IWifiChip::ApIfaceParams params) {
+    if (!wifi_chip.get()) {
+        return nullptr;
+    }
+    std::shared_ptr<IWifiApIface> iface;
+    if (!configureChipToSupportConcurrencyTypeInternal(wifi_chip, IfaceConcurrencyType::AP)) {
+        return nullptr;
+    }
+    auto status = wifi_chip->createApOrBridgedApIfaceWithParams(params, &iface);
+    if (!status.isOk()) {
+        return nullptr;
+    }
+    return iface;
 }

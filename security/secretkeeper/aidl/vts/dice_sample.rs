@@ -34,8 +34,8 @@ use diced_open_dice::{
     retry_bcc_main_flow, retry_dice_main_flow, Config, DiceArtifacts, DiceConfigValues, DiceError,
     DiceMode, InputValues, OwnedDiceArtifacts, HASH_SIZE, HIDDEN_SIZE,
 };
+use explicitkeydice::OwnedDiceArtifactsWithExplicitKey;
 use log::error;
-use secretkeeper_client::dice::OwnedDiceArtifactsWithExplicitKey;
 
 /// Sample UDS used to perform the root DICE flow by `make_sample_bcc_and_cdis`.
 const UDS: &[u8; CDI_SIZE] = &[
@@ -143,7 +143,7 @@ fn make_sample_bcc_and_cdis(
     let private_key_seed = derive_cdi_private_key_seed(uds).unwrap();
 
     // Gets the root public key in DICE chain (BCC).
-    let (public_key, _) = keypair_from_seed(private_key_seed.as_array()).unwrap();
+    let (public_key, _) = keypair_from_seed(None, private_key_seed.as_array()).unwrap();
     let ed25519_public_key_value = ed25519_public_key_to_cbor_value(&public_key);
 
     // Gets the ABL certificate to as the root certificate of DICE chain.
@@ -283,7 +283,7 @@ fn compos_subcomponent_descriptors() -> Value {
             SUBCOMPONENT_AUTHORITY_HASH => hex::decode("ed255ae9ea98826f3f3a966849f0aaaf356d140c766a869048016e0ba10141af039fec5c53658ddebdad9c2339587c5ef5487bde89237ca79802238d91aebba8").unwrap(),
         },
         {
-            SUBCOMPONENT_NAME => "apex:com.android.btservices",
+            SUBCOMPONENT_NAME => "apex:com.android.bt",
             SUBCOMPONENT_SECURITY_VERSION => 990090000,
             SUBCOMPONENT_CODE_HASH => hex::decode("d7aa86dfdf92e662d2210cd2b3ad4e4522c917e9e287268363aa90e20f9ae16c").unwrap(),
             SUBCOMPONENT_AUTHORITY_HASH => hex::decode("a0d577d4a56cfad09aaa7abcd2355cd78872df85672f2faf9ac2fdf15c06147394e704c7473f28bed737803581a3d097275cc26d8095a4a896ee76167f9ee40e").unwrap(),

@@ -36,12 +36,10 @@ using aidl::android::hardware::audio::core::IModule;
 using aidl::android::media::audio::common::AudioChannelLayout;
 using aidl::android::media::audio::common::AudioDeviceDescription;
 using aidl::android::media::audio::common::AudioDeviceType;
-using aidl::android::media::audio::common::AudioEncapsulationMode;
 using aidl::android::media::audio::common::AudioFormatDescription;
 using aidl::android::media::audio::common::AudioFormatType;
 using aidl::android::media::audio::common::AudioInputFlags;
 using aidl::android::media::audio::common::AudioIoFlags;
-using aidl::android::media::audio::common::AudioOffloadInfo;
 using aidl::android::media::audio::common::AudioOutputFlags;
 using aidl::android::media::audio::common::AudioPort;
 using aidl::android::media::audio::common::AudioPortConfig;
@@ -49,26 +47,6 @@ using aidl::android::media::audio::common::AudioPortExt;
 using aidl::android::media::audio::common::AudioProfile;
 using aidl::android::media::audio::common::AudioUsage;
 using aidl::android::media::audio::common::Int;
-
-// static
-std::optional<AudioOffloadInfo> ModuleConfig::generateOffloadInfoIfNeeded(
-        const AudioPortConfig& portConfig) {
-    if (portConfig.flags.has_value() &&
-        portConfig.flags.value().getTag() == AudioIoFlags::Tag::output &&
-        isBitPositionFlagSet(portConfig.flags.value().get<AudioIoFlags::Tag::output>(),
-                             AudioOutputFlags::COMPRESS_OFFLOAD)) {
-        AudioOffloadInfo offloadInfo;
-        offloadInfo.base.sampleRate = portConfig.sampleRate.value().value;
-        offloadInfo.base.channelMask = portConfig.channelMask.value();
-        offloadInfo.base.format = portConfig.format.value();
-        offloadInfo.bitRatePerSecond = 256000;                             // Arbitrary value.
-        offloadInfo.durationUs = std::chrono::microseconds(1min).count();  // Arbitrary value.
-        offloadInfo.usage = AudioUsage::MEDIA;
-        offloadInfo.encapsulationMode = AudioEncapsulationMode::NONE;
-        return offloadInfo;
-    }
-    return {};
-}
 
 // static
 std::vector<aidl::android::media::audio::common::AudioPort>
@@ -134,6 +112,15 @@ std::vector<AudioPort> ModuleConfig::getAttachedDevicePorts() const {
                mAttachedSourceDevicePorts.count(port.id) != 0;
     });
     return result;
+}
+
+std::optional<AudioPort> ModuleConfig::getAttachedInputDevicePort() const {
+    for (const auto& port : mPorts) {
+        if (mAttachedSourceDevicePorts.count(port.id) != 0) {
+            return port;
+        }
+    }
+    return {};
 }
 
 std::vector<aidl::android::media::audio::common::AudioPort>
@@ -202,10 +189,27 @@ std::vector<AudioPort> ModuleConfig::getNonBlockingMixPorts(bool connectedOnly,
     });
 }
 
+std::vector<AudioPort> ModuleConfig::getSynchronousMixPorts(bool connectedOnly,
+                                                            bool singlePort) const {
+    return findMixPorts(false /*isInput*/, connectedOnly, singlePort, [&](const AudioPort& port) {
+        return !isBitPositionFlagSet(port.flags.get<AudioIoFlags::Tag::output>(),
+                                     AudioOutputFlags::NON_BLOCKING);
+    });
+}
+
 std::vector<AudioPort> ModuleConfig::getOffloadMixPorts(bool connectedOnly, bool singlePort) const {
     return findMixPorts(false /*isInput*/, connectedOnly, singlePort, [&](const AudioPort& port) {
-        return isBitPositionFlagSet(port.flags.get<AudioIoFlags::Tag::output>(),
-                                    AudioOutputFlags::COMPRESS_OFFLOAD);
+        if (isBitPositionFlagSet(port.flags.get<AudioIoFlags::Tag::output>(),
+                                 AudioOutputFlags::COMPRESS_OFFLOAD)) {
+            // Check if the port supports non-PCM formats. If it's only PCM, then
+            // it's a "PCM Offload" port and it may not support features needed
+            // for playing compressed formats.
+            for (const auto& profile : port.profiles) {
+                if (!profile.format.encoding.empty()) return true;
+            }
+            return false;
+        }
+        return false;
     });
 }
 
@@ -216,18 +220,32 @@ std::vector<AudioPort> ModuleConfig::getPrimaryMixPorts(bool connectedOnly, bool
     });
 }
 
-std::vector<AudioPort> ModuleConfig::getMmapOutMixPorts(bool connectedOnly, bool singlePort) const {
-    return findMixPorts(false /*isInput*/, connectedOnly, singlePort, [&](const AudioPort& port) {
-        return isBitPositionFlagSet(port.flags.get<AudioIoFlags::Tag::output>(),
-                                    AudioOutputFlags::MMAP_NOIRQ);
-    });
-}
-
-std::vector<AudioPort> ModuleConfig::getMmapInMixPorts(bool connectedOnly, bool singlePort) const {
-    return findMixPorts(true /*isInput*/, connectedOnly, singlePort, [&](const AudioPort& port) {
+std::vector<AudioPort> ModuleConfig::getMmapMixPorts(bool isInput, bool connectedOnly,
+                                                     bool singlePort) const {
+    static const auto inputFlagMatcher = [&](const AudioPort& port) {
         return isBitPositionFlagSet(port.flags.get<AudioIoFlags::Tag::input>(),
                                     AudioInputFlags::MMAP_NOIRQ);
-    });
+    };
+    static const auto outputFlagMatcher = [&](const AudioPort& port) {
+        return isBitPositionFlagSet(port.flags.get<AudioIoFlags::Tag::output>(),
+                                    AudioOutputFlags::MMAP_NOIRQ);
+    };
+    return isInput ? findMixPorts(isInput, connectedOnly, singlePort, inputFlagMatcher)
+                   : findMixPorts(isInput, connectedOnly, singlePort, outputFlagMatcher);
+}
+
+std::vector<AudioPort> ModuleConfig::getNonMmapMixPorts(bool isInput, bool connectedOnly,
+                                                        bool singlePort) const {
+    static const auto inputFlagMatcher = [&](const AudioPort& port) {
+        return !isBitPositionFlagSet(port.flags.get<AudioIoFlags::Tag::input>(),
+                                     AudioInputFlags::MMAP_NOIRQ);
+    };
+    static const auto outputFlagMatcher = [&](const AudioPort& port) {
+        return !isBitPositionFlagSet(port.flags.get<AudioIoFlags::Tag::output>(),
+                                     AudioOutputFlags::MMAP_NOIRQ);
+    };
+    return isInput ? findMixPorts(isInput, connectedOnly, singlePort, inputFlagMatcher)
+                   : findMixPorts(isInput, connectedOnly, singlePort, outputFlagMatcher);
 }
 
 std::vector<AudioPort> ModuleConfig::getRemoteSubmixPorts(bool isInput, bool singlePort) const {
@@ -475,6 +493,48 @@ static size_t combineAudioConfigs(const AudioPort& port, const AudioProfile& pro
 static bool isDynamicProfile(const AudioProfile& profile) {
     return (profile.format.type == AudioFormatType::DEFAULT && profile.format.encoding.empty()) ||
            profile.sampleRates.empty() || profile.channelMasks.empty();
+}
+
+std::optional<AudioPortConfig> ModuleConfig::generateConfigForPort(
+        const AudioPort& port, const AudioPortConfig& audioConfig) {
+    for (const auto& profile : port.profiles) {
+        if (isDynamicProfile(profile)) continue;
+        if (profile.format != audioConfig.format.value()) continue;
+        for (auto channelMask : profile.channelMasks) {
+            if (channelMask != audioConfig.channelMask.value()) continue;
+            for (auto sampleRate : profile.sampleRates) {
+                if (sampleRate != audioConfig.sampleRate.value().value) continue;
+                AudioPortConfig config{};
+                config.portId = port.id;
+                config.sampleRate = audioConfig.sampleRate;
+                config.channelMask = audioConfig.channelMask;
+                config.format = audioConfig.format;
+                config.flags = port.flags;
+                config.ext = port.ext;
+                return config;
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<AudioPortConfig> ModuleConfig::generateMismatchedConfigForPorts(
+        const std::vector<AudioPort>& ports, const AudioPortConfig& audioConfig) {
+    for (const auto& port : ports) {
+        for (const auto& profile : port.profiles) {
+            if (isDynamicProfile(profile)) continue;
+            std::vector<AudioPortConfig> configs;
+            combineAudioConfigs(port, profile, &configs);
+            for (const auto config : configs) {
+                if (config.format != audioConfig.format ||
+                    config.channelMask != audioConfig.channelMask ||
+                    config.sampleRate != audioConfig.sampleRate) {
+                    return config;
+                }
+            }
+        }
+    }
+    return std::nullopt;
 }
 
 std::vector<AudioPort> ModuleConfig::findMixPorts(

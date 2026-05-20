@@ -1,6 +1,8 @@
 #define LOG_TAG "aidl.android.hardware.bluetooth.audio.hfp.setting"
 #include "aidl_android_hardware_bluetooth_audio_hfp_setting.h"
 
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+
 #include <assert.h>
 #ifndef __BIONIC__
 #define __assert2(f,n,fun,e) do { fprintf(stderr, "%s:%d: %s: Assertion `%s' failed", (f), (n), (fun), (e)); abort(); } while (false)

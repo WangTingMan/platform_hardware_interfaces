@@ -54,6 +54,9 @@ class RadioImsResponse : public BnRadioImsResponse {
     virtual ndk::ScopedAStatus sendAnbrQueryResponse(const RadioResponseInfo& info) override;
 
     virtual ndk::ScopedAStatus updateImsCallStatusResponse(const RadioResponseInfo& info) override;
+
+    virtual ndk::ScopedAStatus updateAllowedServicesResponse(
+            const RadioResponseInfo& info) override;
 };
 
 /* Callback class for radio ims indication */
@@ -79,6 +82,7 @@ class RadioImsIndication : public BnRadioImsIndication {
 class RadioImsTest : public RadioServiceTest {
   protected:
     virtual void verifyError(RadioError resp);
+    virtual void clearPotentialEstablishedCalls();
 
   public:
     void SetUp() override;

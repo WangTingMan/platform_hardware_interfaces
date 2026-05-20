@@ -33,7 +33,7 @@
 
 package android.hardware.radio.voice;
 /* @hide */
-@JavaDerive(toString=true) @VintfStability
+@JavaDerive(toString=true) @RustDerive(Clone=true, Eq=true, PartialEq=true) @VintfStability
 parcelable Call {
   int state;
   int index;
@@ -42,6 +42,9 @@ parcelable Call {
   boolean isMT;
   byte als;
   boolean isVoice;
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   boolean isVoicePrivacy;
   String number;
   int numberPresentation;

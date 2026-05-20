@@ -22,14 +22,21 @@ import android.hardware.radio.messaging.CdmaSmsSubaddress;
 /** @hide */
 @VintfStability
 @JavaDerive(toString=true)
+@RustDerive(Clone=true, Eq=true, PartialEq=true)
 parcelable CdmaSmsMessage {
+    /** @deprecated Legacy CDMA is unsupported. */
     int teleserviceId;
+    /** @deprecated Legacy CDMA is unsupported. */
     boolean isServicePresent;
+    /** @deprecated Legacy CDMA is unsupported. */
     int serviceCategory;
+    /** @deprecated Legacy CDMA is unsupported. */
     CdmaSmsAddress address;
+    /** @deprecated Legacy CDMA is unsupported. */
     CdmaSmsSubaddress subAddress;
     /**
      * 3GPP2 C.S0015-B, v2.0
+     * @deprecated Legacy CDMA is unsupported.
      */
     byte[] bearerData;
 }

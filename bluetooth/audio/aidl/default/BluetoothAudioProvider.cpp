@@ -95,8 +95,7 @@ ndk::ScopedAStatus BluetoothAudioProvider::startSession(
                        cookie);
 
   LOG(INFO) << __func__ << " - SessionType=" << toString(session_type_);
-  onSessionReady(_aidl_return);
-  return ndk::ScopedAStatus::ok();
+  return onSessionReady(_aidl_return);
 }
 
 #ifdef _MSC_VER

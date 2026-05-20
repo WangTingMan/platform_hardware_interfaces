@@ -166,7 +166,9 @@ bool FakeFingerprintEngine::onEnrollFingerDown(ISessionCallback* cb,
                 return true;
             }
             auto ac = convertAcquiredInfo(acquired[j]);
-            cb->onAcquired(ac.first, ac.second);
+            if (ac.first != AcquiredInfo::UNKNOWN) {
+                cb->onAcquired(ac.first, ac.second);
+            }
         }
 
         if (left == 0 && !IS_TRUE(parts[2])) {  // end and failed
@@ -203,12 +205,6 @@ bool FakeFingerprintEngine::onAuthenticateFingerDown(ISessionCallback* cb,
     auto acquired = Fingerprint::cfg().get<std::string>("operation_authenticate_acquired");
     auto acquiredInfos = Util::parseIntSequence(acquired);
     int N = acquiredInfos.size();
-
-    if (N == 0) {
-        LOG(ERROR) << "Fail to parse authentiate acquired info: " + acquired;
-        cb->onError(Error::UNABLE_TO_PROCESS, 0 /* vendorError */);
-        return true;
-    }
 
     // got lockout?
     if (checkSensorLockout(cb)) {
@@ -248,11 +244,13 @@ bool FakeFingerprintEngine::onAuthenticateFingerDown(ISessionCallback* cb,
 
         if (i < N) {
             auto ac = convertAcquiredInfo(acquiredInfos[i]);
-            cb->onAcquired(ac.first, ac.second);
+            if (ac.first != AcquiredInfo::UNKNOWN) {
+                cb->onAcquired(ac.first, ac.second);
+            }
             i++;
         }
 
-        SLEEP_MS(duration / N);
+        SLEEP_MS(duration / (N + 1));
     } while (!Util::hasElapsed(now, duration));
 
     auto id = Fingerprint::cfg().get<std::int32_t>("enrollment_hit");
@@ -284,12 +282,6 @@ bool FakeFingerprintEngine::onDetectInteractFingerDown(ISessionCallback* cb,
     int N = acquiredInfos.size();
     int64_t now = Util::getSystemNanoTime();
 
-    if (N == 0) {
-        LOG(ERROR) << "Fail to parse detect interaction acquired info: " + acquired;
-        cb->onError(Error::UNABLE_TO_PROCESS, 0 /* vendorError */);
-        return true;
-    }
-
     int i = 0;
     do {
         auto err = Fingerprint::cfg().get<std::int32_t>("operation_detect_interaction_error");
@@ -311,7 +303,7 @@ bool FakeFingerprintEngine::onDetectInteractFingerDown(ISessionCallback* cb,
             cb->onAcquired(ac.first, ac.second);
             i++;
         }
-        SLEEP_MS(duration / N);
+        SLEEP_MS(duration / (N + 1));
     } while (!Util::hasElapsed(now, duration));
 
     cb->onInteractionDetected();
@@ -414,41 +406,60 @@ ndk::ScopedAStatus FakeFingerprintEngine::onUiReadyImpl() {
     return ndk::ScopedAStatus::ok();
 }
 
-bool FakeFingerprintEngine::getSensorLocationConfig(SensorLocation& out) {
-    auto loc = Fingerprint::cfg().get<std::string>("sensor_location");
+bool FakeFingerprintEngine::getSensorLocationConfig(std::vector<SensorLocation>& out) {
+    auto locStr = Fingerprint::cfg().get<std::string>("sensor_location");
     auto isValidStr = false;
-    auto dim = Util::split(loc, ":");
 
-    if (dim.size() < 3 or dim.size() > 4) {
-        if (!loc.empty()) LOG(WARNING) << "Invalid sensor location input (x:y:radius):" + loc;
-        return false;
-    } else {
-        int32_t x, y, r;
-        std::string d = "";
-        if (dim.size() >= 3) {
-            isValidStr = ParseInt(dim[0], &x) && ParseInt(dim[1], &y) && ParseInt(dim[2], &r);
+    // sensor_location format: x:y:r:d,x:y:r:d,...
+    //   x: x location in pixel, y: y location in pixel, r: radus in pixel, d:display in string
+    auto locations = Util::split(locStr, ",");
+    for (int i = 0; i < locations.size(); i++) {
+        auto loc = locations[i];
+
+        // expect loc in the format: x:y:r  or x:y:d:r
+        auto dim = Util::split(loc, ":");
+
+        if (dim.size() < 3) {
+            if (!loc.empty()) LOG(WARNING) << "Invalid sensor location input (x:y:radius):" + loc;
+            out.clear();
+            return false;
+        } else {
+            int32_t x, y, r;
+            std::string d = "";
+            if (dim.size() >= 3) {
+                isValidStr = ParseInt(dim[0], &x) && ParseInt(dim[1], &y) && ParseInt(dim[2], &r);
+            }
+            if (dim.size() >= 4) {
+                for (int i = 3; i < dim.size(); i++) {
+                    if (i > 3) d += ':';
+                    d += dim[i];
+                }
+            }
+            if (isValidStr) {
+                out.push_back(SensorLocation{.sensorLocationX = x,
+                                             .sensorLocationY = y,
+                                             .sensorRadius = r,
+                                             .display = d});
+            }
         }
-        if (dim.size() >= 4) {
-            d = dim[3];
+    }
+
+    LOG(INFO) << "getSensorLocationConfig: isValidStr=" << isValidStr << " locStr=" << locStr;
+    if (isValidStr) {
+        for (auto loc : out) {
+            LOG(INFO) << loc.toString();
         }
-        if (isValidStr)
-            out = {.sensorLocationX = x, .sensorLocationY = y, .sensorRadius = r, .display = d};
-
-        return isValidStr;
-    }
-}
-SensorLocation FakeFingerprintEngine::getSensorLocation() {
-    SensorLocation location;
-
-    if (getSensorLocationConfig(location)) {
-        return location;
     } else {
-        return defaultSensorLocation();
+        out.clear();
     }
+
+    return isValidStr;
 }
 
-SensorLocation FakeFingerprintEngine::defaultSensorLocation() {
-    return SensorLocation();
+void FakeFingerprintEngine::getSensorLocation(std::vector<SensorLocation>& location) {
+    if (!getSensorLocationConfig(location)) {
+        getDefaultSensorLocation(location);
+    }
 }
 
 std::pair<AcquiredInfo, int32_t> FakeFingerprintEngine::convertAcquiredInfo(int32_t code) {

@@ -19,6 +19,14 @@ aidl_interface {
         java: {
             platform_apis: true,
         },
+        ndk: {
+            apps_enabled: false,
+            min_sdk_version: "30",
+            apex_available: [
+                "//apex_available:platform",
+                "com.android.wifi",
+            ],
+        },
         rust: {
             enabled: true,
             apex_available: [
@@ -28,4 +36,5 @@ aidl_interface {
         },
     },
     versions: ["1"],
+    min_sdk_version: "35",
 }

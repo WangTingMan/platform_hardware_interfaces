@@ -19,19 +19,23 @@ package android.hardware.radio.messaging;
 /** @hide */
 @VintfStability
 @JavaDerive(toString=true)
+@RustDerive(Clone=true, Eq=true, PartialEq=true)
 parcelable CdmaBroadcastSmsConfigInfo {
     /**
      * Defines a broadcast message identifier whose value is 0x0000 - 0xFFFF as defined in
      * C.R1001G 9.3.1 and 9.3.2.
+     * @deprecated Legacy CDMA is unsupported.
      */
     int serviceCategory;
     /**
      * Language code of broadcast message whose value is 0x00 - 0x07 as defined in C.R1001G 9.2.
+     * @deprecated Legacy CDMA is unsupported.
      */
     int language;
     /**
      * Selected false means message types specified in serviceCategory are not accepted,
      * while true means accepted.
+     * @deprecated Legacy CDMA is unsupported.
      */
     boolean selected;
 }

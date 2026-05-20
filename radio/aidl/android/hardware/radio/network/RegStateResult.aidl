@@ -25,9 +25,10 @@ import android.hardware.radio.network.RegistrationFailCause;
 /** @hide */
 @VintfStability
 @JavaDerive(toString=true)
+@RustDerive(Clone=true, Eq=true, PartialEq=true)
 parcelable RegStateResult {
     /**
-     * Registration state. If the RAT is indicated as a GERAN, UTRAN, or CDMA2000 technology, this
+     * Registration state. If the RAT is indicated as a GERAN or UTRAN technology, this
      * value reports registration in the Circuit-switched domain. If the RAT is indicated as an
      * EUTRAN, NGRAN, or another technology that does not support circuit-switched services, this
      * value reports registration in the Packet-switched domain.
@@ -57,7 +58,7 @@ parcelable RegStateResult {
      */
     String registeredPlmn;
     /**
-     * Access-technology-specific registration information, such as for CDMA2000.
+     * Access-technology-specific registration information.
      */
     AccessTechnologySpecificInfo accessTechnologySpecificInfo;
 }

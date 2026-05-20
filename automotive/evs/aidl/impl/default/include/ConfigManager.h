@@ -25,7 +25,10 @@
 
 #include <tinyxml2.h>
 
+#include <condition_variable>
 #include <limits>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -50,6 +53,7 @@ typedef struct {
 class ConfigManager final {
   public:
     static std::unique_ptr<ConfigManager> Create();
+    static std::unique_ptr<ConfigManager> Create(const std::string path);
     ConfigManager(const ConfigManager&) = delete;
     ConfigManager& operator=(const ConfigManager&) = delete;
 
@@ -61,6 +65,15 @@ class ConfigManager final {
             MOCK = 1,
             V4L2 = 2,
             VIDEO = 3,
+
+            UNKNOWN = std::numeric_limits<std::underlying_type_t<DeviceType>>::max(),
+        };
+
+        enum class PixelFormat : std::int32_t {
+            NV12 = 0,
+            NV21 = 1,
+            YV12 = 2,
+            I420 = 3,
 
             UNKNOWN = std::numeric_limits<std::underlying_type_t<DeviceType>>::max(),
         };
@@ -81,6 +94,8 @@ class ConfigManager final {
         }
 
         static DeviceType deviceTypeFromSV(const std::string_view sv);
+
+        static PixelFormat pixelFormatFromSV(const std::string_view sv);
 
         DeviceType deviceType{DeviceType::NONE};
 
@@ -105,6 +120,16 @@ class ConfigManager final {
 
         /* Camera module characteristics */
         camera_metadata_t* characteristics;
+
+        /* Format of media in a given media container. This field is effective
+         * only for DeviceType::VIDEO.
+         */
+        PixelFormat format;
+
+        /* Path of a media file to use for camera emulation. This field is effective
+         * only for DeviceType::VIDEO.
+         */
+        std::string filePath;
     };
 
     class CameraGroupInfo : public CameraInfo {
@@ -272,7 +297,7 @@ class ConfigManager final {
      * @return bool
      *         True if it completes parsing a file successfully.
      */
-    bool readConfigDataFromXML() noexcept;
+    bool readConfigDataFromXML(const std::string path) noexcept;
 
     /*
      * read the information of the vehicle

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,11 +42,15 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.INFO_DRIVER_SEAT, VehiclePropertyChangeMode.STATIC),
         Map.entry(VehicleProperty.INFO_EXTERIOR_DIMENSIONS, VehiclePropertyChangeMode.STATIC),
         Map.entry(VehicleProperty.INFO_MULTI_EV_PORT_LOCATIONS, VehiclePropertyChangeMode.STATIC),
+        Map.entry(VehicleProperty.INFO_MODEL_TRIM, VehiclePropertyChangeMode.STATIC),
+        Map.entry(VehicleProperty.INFO_VEHICLE_SIZE_CLASS, VehiclePropertyChangeMode.STATIC),
         Map.entry(VehicleProperty.PERF_ODOMETER, VehiclePropertyChangeMode.CONTINUOUS),
         Map.entry(VehicleProperty.PERF_VEHICLE_SPEED, VehiclePropertyChangeMode.CONTINUOUS),
         Map.entry(VehicleProperty.PERF_VEHICLE_SPEED_DISPLAY, VehiclePropertyChangeMode.CONTINUOUS),
         Map.entry(VehicleProperty.PERF_STEERING_ANGLE, VehiclePropertyChangeMode.CONTINUOUS),
         Map.entry(VehicleProperty.PERF_REAR_STEERING_ANGLE, VehiclePropertyChangeMode.CONTINUOUS),
+        Map.entry(VehicleProperty.INSTANTANEOUS_FUEL_ECONOMY, VehiclePropertyChangeMode.CONTINUOUS),
+        Map.entry(VehicleProperty.INSTANTANEOUS_EV_EFFICIENCY, VehiclePropertyChangeMode.CONTINUOUS),
         Map.entry(VehicleProperty.ENGINE_COOLANT_TEMP, VehiclePropertyChangeMode.CONTINUOUS),
         Map.entry(VehicleProperty.ENGINE_OIL_LEVEL, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.ENGINE_OIL_TEMP, VehiclePropertyChangeMode.CONTINUOUS),
@@ -63,8 +67,14 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.EV_BATTERY_AVERAGE_TEMPERATURE, VehiclePropertyChangeMode.CONTINUOUS),
         Map.entry(VehicleProperty.TIRE_PRESSURE, VehiclePropertyChangeMode.CONTINUOUS),
         Map.entry(VehicleProperty.CRITICALLY_LOW_TIRE_PRESSURE, VehiclePropertyChangeMode.STATIC),
+        Map.entry(VehicleProperty.ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE, VehiclePropertyChangeMode.CONTINUOUS),
+        Map.entry(VehicleProperty.BRAKE_PEDAL_COMPRESSION_PERCENTAGE, VehiclePropertyChangeMode.CONTINUOUS),
+        Map.entry(VehicleProperty.BRAKE_PAD_WEAR_PERCENTAGE, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.BRAKE_FLUID_LEVEL_LOW, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.VEHICLE_PASSIVE_SUSPENSION_HEIGHT, VehiclePropertyChangeMode.CONTINUOUS),
         Map.entry(VehicleProperty.ENGINE_IDLE_AUTO_STOP_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.IMPACT_DETECTED, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.VEHICLE_HORN_ENGAGED, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.GEAR_SELECTION, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.CURRENT_GEAR, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.PARKING_BRAKE_ON, VehiclePropertyChangeMode.ON_CHANGE),
@@ -79,6 +89,8 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.EV_STOPPING_MODE, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.ELECTRONIC_STABILITY_CONTROL_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.ELECTRONIC_STABILITY_CONTROL_STATE, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.TURN_SIGNAL_LIGHT_STATE, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.TURN_SIGNAL_SWITCH, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.HVAC_FAN_SPEED, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.HVAC_FAN_DIRECTION, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.HVAC_TEMPERATURE_CURRENT, VehiclePropertyChangeMode.ON_CHANGE),
@@ -221,7 +233,7 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.INITIAL_USER_INFO, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.SWITCH_USER, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.CREATE_USER, VehiclePropertyChangeMode.ON_CHANGE),
-        Map.entry(VehicleProperty.REMOVE_USER, VehiclePropertyChangeMode.STATIC),
+        Map.entry(VehicleProperty.REMOVE_USER, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.USER_IDENTIFICATION_ASSOCIATION, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.EVS_SERVICE_REQUEST, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.POWER_POLICY_REQ, VehiclePropertyChangeMode.ON_CHANGE),
@@ -255,6 +267,7 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.VEHICLE_IN_USE, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.CLUSTER_HEARTBEAT, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.CAMERA_SERVICE_CURRENT_STATE, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.PER_DISPLAY_MAX_BRIGHTNESS, VehiclePropertyChangeMode.STATIC),
         Map.entry(VehicleProperty.AUTOMATIC_EMERGENCY_BRAKING_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),

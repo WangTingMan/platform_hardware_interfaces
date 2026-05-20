@@ -61,6 +61,8 @@ oneway interface IRadioNetwork {
      * Response function is IRadioNetworkResponse.getAvailableBandModesResponse()
      *
      * This is available when android.hardware.telephony.radio.access is defined.
+     *
+     * @deprecated Android Telephony framework doesn't use this.
      */
     void getAvailableBandModes(in int serial);
 
@@ -94,6 +96,8 @@ oneway interface IRadioNetwork {
      * Response function is IRadioNetworkResponse.getCdmaRoamingPreferenceResponse()
      *
      * This is available when android.hardware.telephony.cdma is defined.
+     *
+     * @deprecated Legacy CDMA is unsupported.
      */
     void getCdmaRoamingPreference(in int serial);
 
@@ -245,6 +249,8 @@ oneway interface IRadioNetwork {
      * Response function is IRadioNetworkResponse.setBandModeResponse()
      *
      * This is available when android.hardware.telephony.radio.access is defined.
+     *
+     * @deprecated Android Telephony framework doesn't use this.
      */
     void setBandMode(in int serial, in RadioBandMode mode);
 
@@ -272,6 +278,8 @@ oneway interface IRadioNetwork {
      * Response function is IRadioNetworkResponse.setCdmaRoamingPreferenceResponse()
      *
      * This is available when android.hardware.telephony.cdma is defined.
+     *
+     * @deprecated Legacy CDMA is unsupported.
      */
     void setCdmaRoamingPreference(in int serial, in CdmaRoamingType type);
 
@@ -334,7 +342,7 @@ oneway interface IRadioNetwork {
 
     /**
      * Enables/disables network state change notifications due to changes in LAC and/or CID (for
-     * GSM) or BID/SID/NID/latitude/longitude (for CDMA). Basically +CREG=2 vs. +CREG=1 (TS 27.007).
+     * GSM). Basically +CREG=2 vs. +CREG=1 (TS 27.007).
      * The Radio implementation must default to "updates enabled" when the screen is on and
      * "updates disabled" when the screen is off.
      *
@@ -344,6 +352,8 @@ oneway interface IRadioNetwork {
      * Response function is IRadioNetworkResponse.setLocationUpdatesResponse()
      *
      * This is available when android.hardware.telephony.radio.access is defined.
+     *
+     * @deprecated Android Telephony framework doesn't use this.
      */
     void setLocationUpdates(in int serial, in boolean enable);
 
@@ -437,6 +447,8 @@ oneway interface IRadioNetwork {
      * Response function is IRadioNetworkResponse.setSuppServiceNotificationsResponse()
      *
      * This is available when android.hardware.telephony.calling is defined.
+     *
+     * @deprecated Android Telephony framework doesn't use this.
      */
     void setSuppServiceNotifications(in int serial, in boolean enable);
 
@@ -483,7 +495,7 @@ oneway interface IRadioNetwork {
      * Requests that network personalization be deactivated
      *
      * @param serial Serial number of request.
-     * @param netPin Network depersonlization code
+     * @param netPin Network depersonalization code
      *
      * Response function is IRadioNetworkResponse.supplyNetworkDepersonalizationResponse()
      *
@@ -713,4 +725,55 @@ oneway interface IRadioNetwork {
      * This is available when android.hardware.telephony.access is defined.
      */
     void isSecurityAlgorithmsUpdatedEnabled(in int serial);
+
+    /**
+     * Set the non-terrestrial PLMN with lower priority than terrestrial networks.
+     * MCC/MNC broadcast by the non-terrestrial networks may not be included in OPLMNwACT file on
+     * SIM profile. Acquisition of satellite based system is lower priority to terrestrial
+     * networks. UE shall make all attempts to acquire terrestrial service prior to camping on
+     * satellite LTE service.
+     *
+     * @param serial Serial number of request
+     * @param carrierPlmnArray Array of roaming PLMN used for connecting to satellite networks
+     *                         supported by user subscription.
+     * @param allSatellitePlmnArray allSatellitePlmnArray contains all the PLMNs present in
+     *                              carrierPlmnArray and also list of satellite PLMNs that are not
+     *                              supported by the carrier.
+     *                              Modem should use the allSatellitePlmnArray to identify satellite
+     *                              PLMNs that are not supported by the carrier and make sure not to
+     *                              attach to them.
+     *
+     * Response function is IRadioNetworkResponse.setSatellitePlmnResponse()
+     *
+     * This is available when android.hardware.telephony.radio.access is defined.
+     */
+    void setSatellitePlmn(
+            in int serial, in String[] carrierPlmnArray, in String[] allSatellitePlmnArray);
+
+    /**
+     * Enable or disable satellite in the cellular modem associated with a carrier.
+     *
+     * Refer setSatellitePlmn for the details of satellite PLMN scanning process. Once modem is
+     * disabled, modem should not attach to any of the PLMNs present in allSatellitePlmnArray.
+     * If modem is enabled, modem should attach to only PLMNs present in carrierPlmnArray.
+     *
+     * @param serial Serial number of request
+     * @param satelliteEnabled {@code true} to enable satellite, {@code false} to disable satellite.
+     *
+     * Response function is IRadioNetworkResponse.setSatelliteEnabledForCarrier()
+     *
+     * This is available when android.hardware.telephony.radio.access is defined.
+     */
+    void setSatelliteEnabledForCarrier(in int serial, boolean satelliteEnabled);
+
+    /**
+     * Check whether satellite is enabled in the cellular modem associated with a carrier.
+     *
+     * @param serial Serial number of request
+     *
+     * Response function is IRadioNetworkResponse.isSatelliteEnabledForCarrier()
+     *
+     * This is available when android.hardware.telephony.radio.access is defined.
+     */
+    void isSatelliteEnabledForCarrier(in int serial);
 }

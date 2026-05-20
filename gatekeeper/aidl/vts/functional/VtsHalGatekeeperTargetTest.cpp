@@ -20,8 +20,11 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <string>
+#include <thread>
+#include <utility>
 #include <vector>
 
 #include <aidl/Gtest.h>
@@ -60,7 +63,7 @@ static void verifyAuthToken(GatekeeperVerifyResponse& rsp) {
 
     EXPECT_EQ(HW_AUTH_PASSWORD, auth_type);
     EXPECT_NE(UINT64_C(~0), auth_tstamp);
-    ALOGI("Authenticator ID: %016" PRIX64, rsp.hardwareAuthToken.authenticatorId);
+    ALOGI("Secure user ID:   %016" PRIX64, rsp.hardwareAuthToken.userId);
     EXPECT_NE(UINT32_C(0), rsp.hardwareAuthToken.userId);
 }
 
@@ -69,7 +72,7 @@ class GatekeeperAidlTest : public ::testing::TestWithParam<std::string> {
   protected:
     void setUid(uint32_t uid) { uid_ = uid; }
 
-    Status doEnroll(GatekeeperRequest& req, GatekeeperEnrollResponse& rsp) {
+    Status doEnroll(const GatekeeperRequest& req, GatekeeperEnrollResponse& rsp) {
         Status ret;
         while (true) {
             ret = gatekeeper_->enroll(uid_, req.curPwdHandle, req.curPwd, req.newPwd, &rsp);
@@ -81,7 +84,7 @@ class GatekeeperAidlTest : public ::testing::TestWithParam<std::string> {
         return ret;
     }
 
-    Status doVerify(GatekeeperRequest& req, GatekeeperVerifyResponse& rsp) {
+    Status doVerify(const GatekeeperRequest& req, GatekeeperVerifyResponse& rsp) {
         Status ret;
         while (true) {
             ret = gatekeeper_->verify(uid_, req.challenge, req.curPwdHandle, req.newPwd, &rsp);
@@ -97,12 +100,14 @@ class GatekeeperAidlTest : public ::testing::TestWithParam<std::string> {
 
     Status doDeleteAllUsers() { return gatekeeper_->deleteAllUsers(); }
 
-    void generatePassword(std::vector<uint8_t>& password, uint8_t seed) {
+    std::vector<uint8_t> generatePassword(uint8_t seed) {
+        std::vector<uint8_t> password;
         password.resize(16);
         memset(password.data(), seed, password.size());
+        return password;
     }
 
-    void checkEnroll(GatekeeperEnrollResponse& rsp, Status& ret, bool expectSuccess) {
+    void checkEnroll(const GatekeeperEnrollResponse& rsp, const Status& ret, bool expectSuccess) {
         if (expectSuccess) {
             EXPECT_TRUE(ret.isOk());
             EXPECT_EQ(IGatekeeper::STATUS_OK, rsp.statusCode);
@@ -115,40 +120,57 @@ class GatekeeperAidlTest : public ::testing::TestWithParam<std::string> {
         }
     }
 
-    void checkVerify(GatekeeperVerifyResponse& rsp, Status& ret, uint64_t challenge,
-                     bool expectSuccess) {
+    void enrollNewPasswordFails(const std::vector<uint8_t>& password) {
+        enrollNewPassword(password, /* expectSuccess= */ false);
+    }
+
+    std::pair<std::vector<uint8_t>, int64_t> enrollNewPassword(const std::vector<uint8_t>& password,
+                                                               bool expectSuccess = true) {
+        GatekeeperRequest req;
+        req.newPwd = password;
+        GatekeeperEnrollResponse rsp;
+        Status ret = doEnroll(req, rsp);
+        checkEnroll(rsp, ret, expectSuccess);
+        return std::make_pair(rsp.data, rsp.secureUserId);
+    }
+
+    void verifyPasswordSucceeds(const std::vector<uint8_t>& password,
+                                const std::vector<uint8_t>& passwordHandle, uint64_t challenge,
+                                int64_t expectedSid, GatekeeperVerifyResponse& verifyRsp) {
+        verifyPassword(password, passwordHandle, challenge, verifyRsp, expectedSid,
+                       /* expectSuccess= */ true);
+    }
+
+    void verifyPasswordFails(const std::vector<uint8_t>& password,
+                             const std::vector<uint8_t>& passwordHandle, uint64_t challenge) {
+        GatekeeperVerifyResponse verifyRsp;
+        verifyPassword(password, passwordHandle, challenge, verifyRsp,
+                       /* expectedSid= */ 0,
+                       /* expectSuccess= */ false);
+    }
+
+    void verifyPassword(const std::vector<uint8_t>& password,
+                        const std::vector<uint8_t>& passwordHandle, uint64_t challenge,
+                        GatekeeperVerifyResponse& verifyRsp, int64_t expectedSid,
+                        bool expectSuccess) {
+        // Assemble the arguments into the verify request.
+        GatekeeperRequest verifyReq;
+        verifyReq.newPwd = password;
+        verifyReq.curPwdHandle = passwordHandle;
+        verifyReq.challenge = challenge;
+
+        Status ret = doVerify(verifyReq, verifyRsp);
         if (expectSuccess) {
             EXPECT_TRUE(ret.isOk());
-            EXPECT_GE(rsp.statusCode, IGatekeeper::STATUS_OK);
-            EXPECT_LE(rsp.statusCode, IGatekeeper::STATUS_REENROLL);
+            EXPECT_GE(verifyRsp.statusCode, IGatekeeper::STATUS_OK);
+            EXPECT_LE(verifyRsp.statusCode, IGatekeeper::STATUS_REENROLL);
 
-            verifyAuthToken(rsp);
-            EXPECT_EQ(challenge, rsp.hardwareAuthToken.challenge);
+            verifyAuthToken(verifyRsp);
+            EXPECT_EQ(challenge, verifyRsp.hardwareAuthToken.challenge);
+            EXPECT_EQ(expectedSid, verifyRsp.hardwareAuthToken.userId);
         } else {
             EXPECT_EQ(IGatekeeper::ERROR_GENERAL_FAILURE, getReturnStatusCode(ret));
         }
-    }
-
-    void enrollNewPassword(std::vector<uint8_t>& password, GatekeeperEnrollResponse& rsp,
-                           bool expectSuccess) {
-        GatekeeperRequest req;
-        req.newPwd = password;
-        Status ret = doEnroll(req, rsp);
-        checkEnroll(rsp, ret, expectSuccess);
-    }
-
-    void verifyPassword(std::vector<uint8_t>& password, std::vector<uint8_t>& passwordHandle,
-                        uint64_t challenge, GatekeeperVerifyResponse& verifyRsp,
-                        bool expectSuccess) {
-        GatekeeperRequest verifyReq;
-
-        // build verify request for the same password (we want it to succeed)
-        verifyReq.newPwd = password;
-        // use enrolled password handle we've got
-        verifyReq.curPwdHandle = passwordHandle;
-        verifyReq.challenge = challenge;
-        Status ret = doVerify(verifyReq, verifyRsp);
-        checkVerify(verifyRsp, ret, challenge, expectSuccess);
     }
 
     int32_t getReturnStatusCode(const Status& result) {
@@ -159,6 +181,29 @@ class GatekeeperAidlTest : public ::testing::TestWithParam<std::string> {
             return IGatekeeper::ERROR_GENERAL_FAILURE;
         }
         return IGatekeeper::STATUS_OK;
+    }
+
+    // Check that a verification attempt fails, and return any retry interval in milliseconds.
+    int32_t verifyPasswordFailDelay(const std::vector<uint8_t>& password,
+                                    const std::vector<uint8_t>& passwordHandle,
+                                    uint64_t challenge) {
+        GatekeeperRequest verifyReq;
+        verifyReq.newPwd = password;
+        verifyReq.curPwdHandle = passwordHandle;
+        verifyReq.challenge = challenge;
+
+        GatekeeperVerifyResponse verifyRsp;
+        Status ret = doVerify(verifyReq, verifyRsp);
+        if (ret.isOk()) {
+            // An OK Binder response (when verification failure is expected)
+            // should be an indication that the verification wasn't attempted
+            // because a retry interval is pending.
+            EXPECT_EQ(verifyRsp.statusCode, IGatekeeper::ERROR_RETRY_TIMEOUT);
+            return verifyRsp.timeoutMs;
+        } else {
+            // Failed attempt to verify.
+            return 0;
+        }
     }
 
   protected:
@@ -181,11 +226,9 @@ class GatekeeperAidlTest : public ::testing::TestWithParam<std::string> {
  * Ensure we can enroll new password
  */
 TEST_P(GatekeeperAidlTest, EnrollSuccess) {
-    std::vector<uint8_t> password;
-    GatekeeperEnrollResponse rsp;
     ALOGI("Testing Enroll (expected success)");
-    generatePassword(password, 0);
-    enrollNewPassword(password, rsp, true);
+    std::vector<uint8_t> password = generatePassword(0);
+    enrollNewPassword(password);
     ALOGI("Testing Enroll done");
 }
 
@@ -193,10 +236,9 @@ TEST_P(GatekeeperAidlTest, EnrollSuccess) {
  * Ensure we can not enroll empty password
  */
 TEST_P(GatekeeperAidlTest, EnrollNoPassword) {
+    ALOGI("Testing Enroll(empty) (expected failure)");
     std::vector<uint8_t> password;
-    GatekeeperEnrollResponse rsp;
-    ALOGI("Testing Enroll (expected failure)");
-    enrollNewPassword(password, rsp, false);
+    enrollNewPasswordFails(password);
     ALOGI("Testing Enroll done");
 }
 
@@ -204,19 +246,16 @@ TEST_P(GatekeeperAidlTest, EnrollNoPassword) {
  * Ensure we can successfully verify previously enrolled password
  */
 TEST_P(GatekeeperAidlTest, VerifySuccess) {
-    GatekeeperEnrollResponse enrollRsp;
-    GatekeeperVerifyResponse verifyRsp;
-    std::vector<uint8_t> password;
-
     ALOGI("Testing Enroll+Verify (expected success)");
-    generatePassword(password, 0);
-    enrollNewPassword(password, enrollRsp, true);
-    verifyPassword(password, enrollRsp.data, 1, verifyRsp, true);
+    std::vector<uint8_t> password = generatePassword(0);
+
+    const auto [passwordHandle, sid] = enrollNewPassword(password);
+    GatekeeperVerifyResponse verifyRsp;
+    verifyPasswordSucceeds(password, passwordHandle, 1, sid, verifyRsp);
 
     ALOGI("Testing unenrolled password doesn't verify");
-    verifyRsp = {0, 0, {}};
-    generatePassword(password, 1);
-    verifyPassword(password, enrollRsp.data, 1, verifyRsp, false);
+    std::vector<uint8_t> wrongPassword = generatePassword(1);
+    verifyPasswordFails(wrongPassword, passwordHandle, 1);
     ALOGI("Testing Enroll+Verify done");
 }
 
@@ -224,17 +263,15 @@ TEST_P(GatekeeperAidlTest, VerifySuccess) {
  * Ensure that passwords containing a NUL byte aren't truncated
  */
 TEST_P(GatekeeperAidlTest, PasswordIsBinaryData) {
-    GatekeeperEnrollResponse enrollRsp;
-    GatekeeperVerifyResponse verifyRsp;
-    std::vector<uint8_t> rightPassword = {'A', 'B', 'C', '\0', 'D', 'E', 'F'};
-    std::vector<uint8_t> wrongPassword = {'A', 'B', 'C', '\0', '\0', '\0', '\0'};
-
     ALOGI("Testing Enroll+Verify of password with embedded NUL (expected success)");
-    enrollNewPassword(rightPassword, enrollRsp, true);
-    verifyPassword(rightPassword, enrollRsp.data, 1, verifyRsp, true);
+    std::vector<uint8_t> rightPassword = {'A', 'B', 'C', '\0', 'D', 'E', 'F'};
+    const auto [passwordHandle, sid] = enrollNewPassword(rightPassword);
+    GatekeeperVerifyResponse verifyRsp;
+    verifyPasswordSucceeds(rightPassword, passwordHandle, 1, sid, verifyRsp);
 
     ALOGI("Testing Verify of wrong password (expected failure)");
-    verifyPassword(wrongPassword, enrollRsp.data, 1, verifyRsp, false);
+    std::vector<uint8_t> wrongPassword = {'A', 'B', 'C', '\0', '\0', '\0', '\0'};
+    verifyPasswordFails(wrongPassword, passwordHandle, 1);
 
     ALOGI("PasswordIsBinaryData test done");
 }
@@ -243,20 +280,18 @@ TEST_P(GatekeeperAidlTest, PasswordIsBinaryData) {
  * Ensure that long passwords aren't truncated
  */
 TEST_P(GatekeeperAidlTest, LongPassword) {
-    GatekeeperEnrollResponse enrollRsp;
-    GatekeeperVerifyResponse verifyRsp;
+    ALOGI("Testing Enroll+Verify of long password (expected success)");
     std::vector<uint8_t> password;
-
     password.resize(64);  // maximum length used by Android
     memset(password.data(), 'A', password.size());
 
-    ALOGI("Testing Enroll+Verify of long password (expected success)");
-    enrollNewPassword(password, enrollRsp, true);
-    verifyPassword(password, enrollRsp.data, 1, verifyRsp, true);
+    const auto [passwordHandle, sid] = enrollNewPassword(password);
+    GatekeeperVerifyResponse verifyRsp;
+    verifyPasswordSucceeds(password, passwordHandle, 1, sid, verifyRsp);
 
     ALOGI("Testing Verify of wrong password (expected failure)");
     password[password.size() - 1] ^= 1;
-    verifyPassword(password, enrollRsp.data, 1, verifyRsp, false);
+    verifyPasswordFails(password, passwordHandle, 1);
 
     ALOGI("LongPassword test done");
 }
@@ -266,61 +301,56 @@ TEST_P(GatekeeperAidlTest, LongPassword) {
  * secure user_id) if we prove we know old password
  */
 TEST_P(GatekeeperAidlTest, TrustedReenroll) {
-    GatekeeperEnrollResponse enrollRsp;
-    GatekeeperRequest reenrollReq;
-    GatekeeperEnrollResponse reenrollRsp;
-    GatekeeperVerifyResponse verifyRsp;
-    GatekeeperVerifyResponse reenrollVerifyRsp;
-    std::vector<uint8_t> password;
-    std::vector<uint8_t> newPassword;
-
-    generatePassword(password, 0);
-
     ALOGI("Testing Trusted Reenroll (expected success)");
-    enrollNewPassword(password, enrollRsp, true);
-    verifyPassword(password, enrollRsp.data, 0, verifyRsp, true);
-    ALOGI("Primary Enroll+Verify done");
 
-    generatePassword(newPassword, 1);
+    std::vector<uint8_t> password = generatePassword(0);
+
+    const auto [passwordHandle, sid] = enrollNewPassword(password);
+
+    GatekeeperVerifyResponse verifyRsp;
+    verifyPasswordSucceeds(password, passwordHandle, 0, sid, verifyRsp);
+    ALOGI("Primary Enroll+Verify done");
+    verifyAuthToken(verifyRsp);
+
+    std::vector<uint8_t> newPassword = generatePassword(1);
+    GatekeeperRequest reenrollReq;
     reenrollReq.newPwd = newPassword;
     reenrollReq.curPwd = password;
-    reenrollReq.curPwdHandle = enrollRsp.data;
+    reenrollReq.curPwdHandle = passwordHandle;
 
+    GatekeeperEnrollResponse reenrollRsp;
     Status ret = doEnroll(reenrollReq, reenrollRsp);
     checkEnroll(reenrollRsp, ret, true);
-    verifyPassword(newPassword, reenrollRsp.data, 0, reenrollVerifyRsp, true);
-    ALOGI("Trusted ReEnroll+Verify done");
+    std::vector<uint8_t> newPasswordHandle = reenrollRsp.data;
 
-    verifyAuthToken(verifyRsp);
+    GatekeeperVerifyResponse reenrollVerifyRsp;
+    verifyPasswordSucceeds(newPassword, newPasswordHandle, 0, sid, reenrollVerifyRsp);
+    ALOGI("Trusted ReEnroll+Verify done");
     verifyAuthToken(reenrollVerifyRsp);
     EXPECT_EQ(verifyRsp.hardwareAuthToken.userId, reenrollVerifyRsp.hardwareAuthToken.userId);
     ALOGI("Testing Trusted Reenroll done");
 }
 
 /**
- * Ensure we can update password (and get new
- * secure user_id) if we don't know old password
+ * Ensure we can update password (and get new secure user_id) if we don't know old password
  */
 TEST_P(GatekeeperAidlTest, UntrustedReenroll) {
-    GatekeeperEnrollResponse enrollRsp;
-    GatekeeperEnrollResponse reenrollRsp;
-    GatekeeperVerifyResponse verifyRsp;
-    GatekeeperVerifyResponse reenrollVerifyRsp;
-    std::vector<uint8_t> password;
-    std::vector<uint8_t> newPassword;
-
     ALOGI("Testing Untrusted Reenroll (expected success)");
-    generatePassword(password, 0);
-    enrollNewPassword(password, enrollRsp, true);
-    verifyPassword(password, enrollRsp.data, 0, verifyRsp, true);
+    std::vector<uint8_t> password = generatePassword(0);
+    const auto [passwordHandle, sid] = enrollNewPassword(password);
+    GatekeeperVerifyResponse verifyRsp;
+    verifyPasswordSucceeds(password, passwordHandle, 0, sid, verifyRsp);
+    verifyAuthToken(verifyRsp);
     ALOGI("Primary Enroll+Verify done");
 
-    generatePassword(newPassword, 1);
-    enrollNewPassword(newPassword, reenrollRsp, true);
-    verifyPassword(newPassword, reenrollRsp.data, 0, reenrollVerifyRsp, true);
+    std::vector<uint8_t> newPassword = generatePassword(1);
+    const auto [newPasswordHandle, newSid] = enrollNewPassword(newPassword);
+    EXPECT_NE(newSid, sid);
+
+    GatekeeperVerifyResponse reenrollVerifyRsp;
+    verifyPasswordSucceeds(newPassword, newPasswordHandle, 0, newSid, reenrollVerifyRsp);
     ALOGI("Untrusted ReEnroll+Verify done");
 
-    verifyAuthToken(verifyRsp);
     verifyAuthToken(reenrollVerifyRsp);
     EXPECT_NE(verifyRsp.hardwareAuthToken.userId, reenrollVerifyRsp.hardwareAuthToken.userId);
     ALOGI("Testing Untrusted Reenroll done");
@@ -330,12 +360,10 @@ TEST_P(GatekeeperAidlTest, UntrustedReenroll) {
  * Ensure we don't get successful verify with invalid data
  */
 TEST_P(GatekeeperAidlTest, VerifyNoData) {
+    ALOGI("Testing Verify (expected failure)");
     std::vector<uint8_t> password;
     std::vector<uint8_t> passwordHandle;
-    GatekeeperVerifyResponse verifyRsp;
-
-    ALOGI("Testing Verify (expected failure)");
-    verifyPassword(password, passwordHandle, 0, verifyRsp, false);
+    verifyPasswordFails(password, passwordHandle, 0);
     ALOGI("Testing Verify done");
 }
 
@@ -343,22 +371,21 @@ TEST_P(GatekeeperAidlTest, VerifyNoData) {
  * Ensure we can not verify password after we enrolled it and then deleted user
  */
 TEST_P(GatekeeperAidlTest, DeleteUserTest) {
-    std::vector<uint8_t> password;
-    GatekeeperEnrollResponse enrollRsp;
-    GatekeeperVerifyResponse verifyRsp;
     ALOGI("Testing deleteUser (expected success)");
     setUid(10001);
-    generatePassword(password, 0);
-    enrollNewPassword(password, enrollRsp, true);
-    verifyPassword(password, enrollRsp.data, 0, verifyRsp, true);
+    std::vector<uint8_t> password = generatePassword(0);
+    const auto [passwordHandle, sid] = enrollNewPassword(password);
+
+    GatekeeperVerifyResponse verifyRsp;
+    verifyPasswordSucceeds(password, passwordHandle, 0, sid, verifyRsp);
     ALOGI("Enroll+Verify done");
+
     auto result = doDeleteUser();
     EXPECT_TRUE(result.isOk() ||
                 (getReturnStatusCode(result) == IGatekeeper::ERROR_NOT_IMPLEMENTED));
     ALOGI("DeleteUser done");
     if (result.isOk()) {
-        verifyRsp = {0, 0, {}};
-        verifyPassword(password, enrollRsp.data, 0, verifyRsp, false);
+        verifyPasswordFails(password, passwordHandle, 0);
         ALOGI("Verify after Delete done (must fail)");
     }
     ALOGI("Testing deleteUser done: rsp=%" PRIi32, getReturnStatusCode(result));
@@ -368,14 +395,12 @@ TEST_P(GatekeeperAidlTest, DeleteUserTest) {
  * Ensure we can not delete a user that does not exist
  */
 TEST_P(GatekeeperAidlTest, DeleteInvalidUserTest) {
-    std::vector<uint8_t> password;
-    GatekeeperEnrollResponse enrollRsp;
-    GatekeeperVerifyResponse verifyRsp;
     ALOGI("Testing deleteUser (expected failure)");
     setUid(10002);
-    generatePassword(password, 0);
-    enrollNewPassword(password, enrollRsp, true);
-    verifyPassword(password, enrollRsp.data, 0, verifyRsp, true);
+    std::vector<uint8_t> password = generatePassword(0);
+    const auto [passwordHandle, sid] = enrollNewPassword(password);
+    GatekeeperVerifyResponse verifyRsp;
+    verifyPasswordSucceeds(password, passwordHandle, 0, sid, verifyRsp);
     ALOGI("Enroll+Verify done");
 
     // Delete the user
@@ -400,7 +425,8 @@ TEST_P(GatekeeperAidlTest, DeleteAllUsersTest) {
     struct UserData {
         uint32_t userId;
         std::vector<uint8_t> password;
-        GatekeeperEnrollResponse enrollRsp;
+        std::vector<uint8_t> passwordHandle;
+        int64_t sid;
         GatekeeperVerifyResponse verifyRsp;
         UserData(int id) { userId = id; }
     } users[3]{10001, 10002, 10003};
@@ -409,15 +435,18 @@ TEST_P(GatekeeperAidlTest, DeleteAllUsersTest) {
     // enroll multiple users
     for (size_t i = 0; i < sizeof(users) / sizeof(users[0]); ++i) {
         setUid(users[i].userId);
-        generatePassword(users[i].password, (i % 255) + 1);
-        enrollNewPassword(users[i].password, users[i].enrollRsp, true);
+        users[i].password = generatePassword((i % 255) + 1);
+        auto [passwordHandle, sid] = enrollNewPassword(users[i].password);
+        users[i].passwordHandle = passwordHandle;
+        users[i].sid = sid;
     }
     ALOGI("Multiple users enrolled");
 
     // verify multiple users
     for (size_t i = 0; i < sizeof(users) / sizeof(users[0]); ++i) {
         setUid(users[i].userId);
-        verifyPassword(users[i].password, users[i].enrollRsp.data, 0, users[i].verifyRsp, true);
+        verifyPasswordSucceeds(users[i].password, users[i].passwordHandle, 0, users[i].sid,
+                               users[i].verifyRsp);
     }
     ALOGI("Multiple users verified");
 
@@ -430,14 +459,112 @@ TEST_P(GatekeeperAidlTest, DeleteAllUsersTest) {
         // verify multiple users after they are deleted; all must fail
         for (size_t i = 0; i < sizeof(users) / sizeof(users[0]); ++i) {
             setUid(users[i].userId);
-            users[i].verifyRsp = {0, 0, {}};
-            verifyPassword(users[i].password, users[i].enrollRsp.data, 0, users[i].verifyRsp,
-                           false);
+            verifyPasswordFails(users[i].password, users[i].passwordHandle, 0);
         }
         ALOGI("Multiple users verified after delete (all must fail)");
     }
 
     ALOGI("Testing deleteAllUsers done: rsp=%" PRIi32, getReturnStatusCode(result));
+}
+
+/**
+ * Ensure that multiple failed verify attempts induce a delay.
+ *
+ * Android CDD section 9.11:
+ *
+ * [C-0-2] The lock screen authentication MUST implement a time interval between failed
+ * attempts. With n as the failed attempt count, the time interval MUST be at least 30 seconds for 9
+ * < n < 30. For n > 29, the time interval value MUST be at least 30*2^floor((n-30)/10)) seconds or
+ * at least 24 hours, whichever is smaller.
+ */
+TEST_P(GatekeeperAidlTest, FailedAttemptDelay) {
+    // Limit test execution to a couple of minutes.
+    const int32_t kMaxTestTimeMillis = 120000;
+
+    ALOGI("Testing multiple failed verify");
+    std::vector<uint8_t> password = generatePassword(0);
+
+    const auto [passwordHandle, sid] = enrollNewPassword(password);
+    GatekeeperVerifyResponse verifyRsp;
+    verifyPasswordSucceeds(password, passwordHandle, 1, sid, verifyRsp);
+
+    std::vector<uint8_t> wrongPassword = generatePassword(1);
+
+    auto testStart = std::chrono::steady_clock::now();
+    int failureCount = 0;
+    while (true) {
+        int32_t waitMillis = verifyPasswordFailDelay(wrongPassword, passwordHandle, 0);
+        ALOGI("Attempt to verify wrong password attempt %d requires %ldms delay", failureCount,
+              (long)waitMillis);
+
+        if (failureCount > 9) {
+            // Allow a little leeway for rounding
+            ASSERT_GT(waitMillis, 29000) << "failed verify attempt " << failureCount << " requires "
+                                         << waitMillis << "ms retry interval but should be >30s";
+        }
+        failureCount++;
+
+        if (waitMillis != 0) {
+            // Round up slightly to be sure the retry interval has expired before next retry.
+            waitMillis += 500;
+
+            // Abandon the test if the next wait would make overall test execution too long.
+            auto now = std::chrono::steady_clock::now();
+            auto testMillis =
+                    std::chrono::duration_cast<std::chrono::milliseconds>(now - testStart).count();
+            if (testMillis + waitMillis > kMaxTestTimeMillis) {
+                ALOGI("Abandoning test as total time taken is now %ldms", (long)testMillis);
+                break;
+            }
+
+            ALOGI("Waiting %ld millis before retrying", (long)waitMillis);
+            std::this_thread::sleep_for(std::chrono::milliseconds(waitMillis));
+        }
+    }
+    ALOGI("Testing multiple failed verify done");
+}
+
+/**
+ * Test that delays are enforced.
+ **/
+TEST_P(GatekeeperAidlTest, DelayEnforced) {
+    ALOGI("Testing delay enforcement");
+    std::vector<uint8_t> password = generatePassword(0);
+
+    const auto [passwordHandle, sid] = enrollNewPassword(password);
+    GatekeeperVerifyResponse verifyRsp;
+    verifyPasswordSucceeds(password, passwordHandle, 0, sid, verifyRsp);
+
+    std::vector<uint8_t> wrongPassword = generatePassword(1);
+
+    // Repeatedly fail verification until we get a long retry delay.
+    int32_t waitMillis = 0;
+    int failureCount = 0;
+    while (waitMillis < 20000) {
+        waitMillis = verifyPasswordFailDelay(wrongPassword, passwordHandle, 0);
+        ALOGI("Attempt to verify wrong password attempt %d requires %ldms delay", failureCount,
+              (long)waitMillis);
+        failureCount++;
+    }
+
+    // Wait for less than the required time.
+    int32_t shortWaitMillis = waitMillis / 2;
+    ALOGI("Waiting %ld millis (too soon) before retrying", (long)shortWaitMillis);
+    std::this_thread::sleep_for(std::chrono::milliseconds(shortWaitMillis));
+
+    // Presenting the correct password fails because a retry interval is still in force.
+    int32_t remainingMillis = verifyPasswordFailDelay(password, passwordHandle, 0);
+    EXPECT_GT(remainingMillis, 0);
+
+    // Wait for rest of the required time (with some leeway).
+    shortWaitMillis += 1000;
+    ALOGI("Waiting %ld millis before retrying", (long)shortWaitMillis);
+    std::this_thread::sleep_for(std::chrono::milliseconds(shortWaitMillis));
+
+    GatekeeperVerifyResponse laterVerifyRsp;
+    verifyPasswordSucceeds(password, passwordHandle, 0, sid, laterVerifyRsp);
+
+    ALOGI("Testing delay enforcement done");
 }
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GatekeeperAidlTest);

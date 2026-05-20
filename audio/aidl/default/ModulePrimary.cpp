@@ -21,7 +21,10 @@
 #include <android-base/logging.h>
 
 #include "core-impl/ModulePrimary.h"
+
 #ifndef _MSC_VER
+#include "core-impl/StreamMmapStub.h"
+#include "core-impl/StreamOffloadStub.h"
 #include "core-impl/StreamPrimary.h"
 #endif
 #include "core-impl/Telephony.h"
@@ -30,11 +33,18 @@
 #undef ERROR
 #endif
 
+using aidl::android::hardware::audio::common::areAllBitPositionFlagsSet;
+using aidl::android::hardware::audio::common::hasMmapFlag;
 using aidl::android::hardware::audio::common::SinkMetadata;
 using aidl::android::hardware::audio::common::SourceMetadata;
+using aidl::android::hardware::audio::core::StreamDescriptor;
+using aidl::android::media::audio::common::AudioInputFlags;
+using aidl::android::media::audio::common::AudioIoFlags;
 using aidl::android::media::audio::common::AudioOffloadInfo;
+using aidl::android::media::audio::common::AudioOutputFlags;
 using aidl::android::media::audio::common::AudioPort;
 using aidl::android::media::audio::common::AudioPortConfig;
+using aidl::android::media::audio::common::AudioPortExt;
 using aidl::android::media::audio::common::MicrophoneInfo;
 
 namespace aidl::android::hardware::audio::core {
@@ -51,6 +61,20 @@ ndk::ScopedAStatus ModulePrimary::getTelephony(std::shared_ptr<ITelephony>* _aid
     return ndk::ScopedAStatus::ok();
 }
 
+ndk::ScopedAStatus ModulePrimary::calculateBufferSizeFrames(
+        const ::aidl::android::media::audio::common::AudioFormatDescription& format,
+        int32_t latencyMs, int32_t sampleRateHz, int32_t* bufferSizeFrames) {
+#ifndef _MSC_VER
+    /*ignore this now*/
+    if (format.type != ::aidl::android::media::audio::common::AudioFormatType::PCM &&
+        StreamOffloadStub::getSupportedEncodings().count(format.encoding)) {
+        *bufferSizeFrames = sampleRateHz / 2;  // 1/2 of a second.
+        return ndk::ScopedAStatus::ok();
+    }
+#endif
+    return Module::calculateBufferSizeFrames(format, latencyMs, sampleRateHz, bufferSizeFrames);
+}
+
 ndk::ScopedAStatus ModulePrimary::createInputStream(StreamContext&& context,
                                                     const SinkMetadata& sinkMetadata,
                                                     const std::vector<MicrophoneInfo>& microphones,
@@ -58,6 +82,11 @@ ndk::ScopedAStatus ModulePrimary::createInputStream(StreamContext&& context,
 #ifdef _MSC_VER
     return ndk::ScopedAStatus::ok();
 #else
+    if (context.isMmap()) {
+        // "Stub" is used because there is no support for MMAP audio I/O on CVD.
+        return createStreamInstance<StreamInMmapStub>(result, std::move(context), sinkMetadata,
+                                                      microphones);
+    }
     return createStreamInstance<StreamInPrimary>(result, std::move(context), sinkMetadata,
                                                  microphones);
 #endif
@@ -69,17 +98,60 @@ ndk::ScopedAStatus ModulePrimary::createOutputStream(
 #ifdef _MSC_VER
     return ndk::ScopedAStatus::ok();
 #else
+    if (context.isMmap()) {
+        // "Stub" is used because there is no support for MMAP audio I/O on CVD.
+        return createStreamInstance<StreamOutMmapStub>(result, std::move(context), sourceMetadata,
+                                                       offloadInfo);
+    } else if (areAllBitPositionFlagsSet(
+                       context.getFlags().get<AudioIoFlags::output>(),
+                       {AudioOutputFlags::COMPRESS_OFFLOAD, AudioOutputFlags::NON_BLOCKING})) {
+        // "Stub" is used because there is no actual decoder. The stream just
+        // extracts the clip duration from the media file header and simulates
+        // playback over time.
+        return createStreamInstance<StreamOutOffloadStub>(result, std::move(context),
+                                                          sourceMetadata, offloadInfo);
+    }
     return createStreamInstance<StreamOutPrimary>(result, std::move(context), sourceMetadata,
                                                   offloadInfo);
 #endif
 }
 
-int32_t ModulePrimary::getNominalLatencyMs(const AudioPortConfig&) {
+ndk::ScopedAStatus ModulePrimary::createMmapBuffer(const AudioPortConfig& portConfig,
+                                                   int32_t bufferSizeFrames, int32_t frameSizeBytes,
+                                                   MmapBufferDescriptor* desc) {
+    const size_t bufferSizeBytes = static_cast<size_t>(bufferSizeFrames) * frameSizeBytes;
+    // The actual mmap buffer for I/O is created after the stream exits standby, via
+    // 'IStreamCommon.createMmapBuffer'. But we must return a valid file descriptor here because
+    // 'MmapBufferDescriptor' can not contain a "null" fd.
+    const std::string regionName =
+            std::string("mmap-sim-o-") +
+            std::to_string(portConfig.ext.get<AudioPortExt::Tag::mix>().handle);
+#ifdef _MSC_VER
+    /*ignore this now*/
+    int fd = 0;
+#else
+    int fd = ashmem_create_region(regionName.c_str(), bufferSizeBytes);
+#endif
+    if (fd < 0) {
+        PLOG(ERROR) << __func__ << ": failed to create shared memory region of " << bufferSizeBytes
+                    << " bytes";
+        return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_STATE);
+    }
+    desc->sharedMemory.fd = ndk::ScopedFileDescriptor(fd);
+    desc->sharedMemory.size = bufferSizeBytes;
+    desc->burstSizeFrames = bufferSizeFrames / 4;
+    desc->flags = 1 << MmapBufferDescriptor::FLAG_INDEX_APPLICATION_SHAREABLE;
+    LOG(DEBUG) << __func__ << ": " << desc->toString();
+    return ndk::ScopedAStatus::ok();
+}
+
+int32_t ModulePrimary::getNominalLatencyMs(const AudioPortConfig& portConfig) {
+    static constexpr int32_t kLowLatencyMs = 10;
     // 85 ms is chosen considering 4096 frames @ 48 kHz. This is the value which allows
     // the virtual Android device implementation to pass CTS. Hardware implementations
     // should have significantly lower latency.
-    static constexpr int32_t kLatencyMs = 85;
-    return kLatencyMs;
+    static constexpr int32_t kStandardLatencyMs = 85;
+    return hasMmapFlag(portConfig.flags.value()) ? kLowLatencyMs : kStandardLatencyMs;
 }
 
 }  // namespace aidl::android::hardware::audio::core

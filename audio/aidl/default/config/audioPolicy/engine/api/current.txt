@@ -203,8 +203,10 @@ package android.audio.policy.engine.configuration {
     method @Nullable public java.util.List<android.audio.policy.engine.configuration.AttributesGroup> getAttributesGroup();
     method @Nullable public int getId();
     method @Nullable public String getName();
+    method @Nullable public int getZoneId();
     method public void setId(@Nullable int);
     method public void setName(@Nullable String);
+    method public void setZoneId(@Nullable int);
   }
 
   public enum SourceEnumType {
@@ -266,6 +268,7 @@ package android.audio.policy.engine.configuration {
     enum_constant public static final android.audio.policy.engine.configuration.UsageEnumType AUDIO_USAGE_NOTIFICATION_EVENT;
     enum_constant public static final android.audio.policy.engine.configuration.UsageEnumType AUDIO_USAGE_NOTIFICATION_TELEPHONY_RINGTONE;
     enum_constant public static final android.audio.policy.engine.configuration.UsageEnumType AUDIO_USAGE_SAFETY;
+    enum_constant public static final android.audio.policy.engine.configuration.UsageEnumType AUDIO_USAGE_SPEAKER_CLEANUP;
     enum_constant public static final android.audio.policy.engine.configuration.UsageEnumType AUDIO_USAGE_UNKNOWN;
     enum_constant public static final android.audio.policy.engine.configuration.UsageEnumType AUDIO_USAGE_VEHICLE_STATUS;
     enum_constant public static final android.audio.policy.engine.configuration.UsageEnumType AUDIO_USAGE_VIRTUAL_SOURCE;

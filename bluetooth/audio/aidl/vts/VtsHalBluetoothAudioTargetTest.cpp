@@ -26,6 +26,7 @@
 #include <cutils/properties.h>
 #include <fmq/AidlMessageQueue.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <future>
 #include <unordered_set>
@@ -246,7 +247,7 @@ class BluetoothAudioProviderFactoryAidl
  public:
   virtual void SetUp() override {
     provider_factory_ = IBluetoothAudioProviderFactory::fromBinder(
-        SpAIBinder(AServiceManager_getService(GetParam().c_str())));
+        SpAIBinder(AServiceManager_waitForService(GetParam().c_str())));
     audio_provider_ = nullptr;
     ASSERT_NE(provider_factory_, nullptr);
   }
@@ -2843,11 +2844,11 @@ class BluetoothAudioProviderLeAudioOutputHardwareAidl
 
     if (asymmetric) {
       source_ase_requriement.aseConfiguration.codecConfiguration = {
-          CodecSpecificConfigurationLtv::SamplingFrequency::HZ8000,
+          CodecSpecificConfigurationLtv::SamplingFrequency::HZ16000,
           CodecSpecificConfigurationLtv::FrameDuration::US10000, allocation};
     } else {
       source_ase_requriement.aseConfiguration.codecConfiguration = {
-          CodecSpecificConfigurationLtv::SamplingFrequency::HZ16000,
+          CodecSpecificConfigurationLtv::SamplingFrequency::HZ32000,
           CodecSpecificConfigurationLtv::FrameDuration::US10000, allocation};
     }
 

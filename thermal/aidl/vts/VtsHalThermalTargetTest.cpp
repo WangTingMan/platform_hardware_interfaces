@@ -38,6 +38,7 @@
 #include <android/binder_manager.h>
 #include <android/binder_process.h>
 #include <android/binder_status.h>
+#include <cutils/properties.h>
 #include <gtest/gtest.h>
 
 #include <unistd.h>
@@ -90,6 +91,10 @@ class ThermalCallback : public BnThermalChangedCallback {
             mInvoke = true;
         }
         mNotifyThrottling.notify_all();
+        return ndk::ScopedAStatus::ok();
+    }
+
+    ndk::ScopedAStatus notifyThresholdChanged(const TemperatureThreshold&) {
         return ndk::ScopedAStatus::ok();
     }
 
@@ -175,6 +180,34 @@ class ThermalAidlTest : public testing::TestWithParam<std::string> {
             ASSERT_EQ(EX_ILLEGAL_ARGUMENT, status.getExceptionCode());
         }
     }
+
+    bool isEmulator() {
+        if (property_get_bool("ro.boot.qemu", false)) {
+            return true;
+        }
+        char device[PROP_VALUE_MAX];
+        char model[PROP_VALUE_MAX];
+        char name[PROP_VALUE_MAX];
+        char hardware[PROP_VALUE_MAX];
+
+        property_get("ro.product.device", device, "");
+        property_get("ro.product.model", model, "");
+        property_get("ro.product.name", name, "");
+        property_get("ro.hardware", hardware, "");
+
+        std::string deviceStr(device);
+        std::string modelStr(model);
+        std::string nameStr(name);
+        std::string hardwareStr(hardware);
+
+        return deviceStr.rfind("vsoc_", 0) == 0 || modelStr.rfind("Cuttlefish ", 0) == 0 ||
+               nameStr.rfind("cf_", 0) == 0 || nameStr.rfind("aosp_cf_", 0) == 0 ||
+               hardwareStr.find("goldfish") != std::string::npos ||
+               hardwareStr.find("ranchu") != std::string::npos ||
+               hardwareStr.find("cutf_cvm") != std::string::npos ||
+               hardwareStr.find("starfish") != std::string::npos;
+    }
+
     // Stores thermal version
     int32_t thermal_version;
 
@@ -355,6 +388,9 @@ TEST_P(ThermalAidlTest, SkinTemperatureThresholdsTest) {
     if (apiLevel < 202404) {
         GTEST_SKIP() << "Skipping test as the vendor level is below 202404: " << apiLevel;
     }
+    if (isEmulator()) {
+        GTEST_SKIP() << "Skipping test on emulator";
+    }
     for (const auto& feature : kNonHandheldFeatures) {
         if (::testing::deviceSupportsFeature(feature.c_str())) {
             GTEST_SKIP() << "Skipping test as the device has feature: " << feature;
@@ -419,6 +455,23 @@ TEST_P(ThermalAidlTest, CoolingDeviceTest) {
         } else {
             ASSERT_EQ(EX_ILLEGAL_STATE, status.getExceptionCode());
         }
+    }
+}
+
+// Test Thermal->forecastSkinTemperature.
+TEST_P(ThermalAidlTest, ForecastSkinTemperatureTest) {
+    auto apiLevel = ::android::base::GetIntProperty<int32_t>("ro.vendor.api_level", 0);
+    if (apiLevel < 202504) {
+        GTEST_SKIP() << "Skipping test as the vendor level is below 202504: " << apiLevel;
+    }
+    float temperature = 0.0f;
+    ::ndk::ScopedAStatus status = mThermal->forecastSkinTemperature(1, &temperature);
+    if (status.getExceptionCode() == EX_UNSUPPORTED_OPERATION) {
+        GTEST_SKIP() << "Skipping test as temperature forecast is not supported";
+    }
+    for (int i = 0; i <= 60; i++) {
+        status = mThermal->forecastSkinTemperature(i, &temperature);
+        ASSERT_NE(NAN, temperature);
     }
 }
 

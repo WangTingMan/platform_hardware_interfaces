@@ -49,6 +49,10 @@ aidl_interface {
             version: "2",
             imports: [],
         },
+        {
+            version: "3",
+            imports: [],
+        },
 
     ],
     frozen: true,
@@ -56,7 +60,7 @@ aidl_interface {
 }
 
 // Note: This should always be one version ahead of the last frozen version
-latest_android_hardware_broadcastradio = "android.hardware.broadcastradio-V2"
+latest_android_hardware_broadcastradio = "android.hardware.broadcastradio-V3"
 
 cc_defaults {
     name: "latest_android_hardware_broadcastradio_ndk_static",

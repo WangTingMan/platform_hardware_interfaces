@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,7 @@
 
 #include <unordered_map>
 
-namespace aidl {
-namespace android {
-namespace hardware {
-namespace automotive {
-namespace vehicle {
-
+namespace aidl::android::hardware::automotive::vehicle {
 std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehicleProperty = {
         {VehicleProperty::INFO_VIN, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::INFO_MAKE, VehiclePropertyChangeMode::STATIC},
@@ -49,11 +44,15 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::INFO_DRIVER_SEAT, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::INFO_EXTERIOR_DIMENSIONS, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::INFO_MULTI_EV_PORT_LOCATIONS, VehiclePropertyChangeMode::STATIC},
+        {VehicleProperty::INFO_MODEL_TRIM, VehiclePropertyChangeMode::STATIC},
+        {VehicleProperty::INFO_VEHICLE_SIZE_CLASS, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::PERF_ODOMETER, VehiclePropertyChangeMode::CONTINUOUS},
         {VehicleProperty::PERF_VEHICLE_SPEED, VehiclePropertyChangeMode::CONTINUOUS},
         {VehicleProperty::PERF_VEHICLE_SPEED_DISPLAY, VehiclePropertyChangeMode::CONTINUOUS},
         {VehicleProperty::PERF_STEERING_ANGLE, VehiclePropertyChangeMode::CONTINUOUS},
         {VehicleProperty::PERF_REAR_STEERING_ANGLE, VehiclePropertyChangeMode::CONTINUOUS},
+        {VehicleProperty::INSTANTANEOUS_FUEL_ECONOMY, VehiclePropertyChangeMode::CONTINUOUS},
+        {VehicleProperty::INSTANTANEOUS_EV_EFFICIENCY, VehiclePropertyChangeMode::CONTINUOUS},
         {VehicleProperty::ENGINE_COOLANT_TEMP, VehiclePropertyChangeMode::CONTINUOUS},
         {VehicleProperty::ENGINE_OIL_LEVEL, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::ENGINE_OIL_TEMP, VehiclePropertyChangeMode::CONTINUOUS},
@@ -70,8 +69,14 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::EV_BATTERY_AVERAGE_TEMPERATURE, VehiclePropertyChangeMode::CONTINUOUS},
         {VehicleProperty::TIRE_PRESSURE, VehiclePropertyChangeMode::CONTINUOUS},
         {VehicleProperty::CRITICALLY_LOW_TIRE_PRESSURE, VehiclePropertyChangeMode::STATIC},
+        {VehicleProperty::ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE, VehiclePropertyChangeMode::CONTINUOUS},
+        {VehicleProperty::BRAKE_PEDAL_COMPRESSION_PERCENTAGE, VehiclePropertyChangeMode::CONTINUOUS},
+        {VehicleProperty::BRAKE_PAD_WEAR_PERCENTAGE, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::BRAKE_FLUID_LEVEL_LOW, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::VEHICLE_PASSIVE_SUSPENSION_HEIGHT, VehiclePropertyChangeMode::CONTINUOUS},
         {VehicleProperty::ENGINE_IDLE_AUTO_STOP_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::IMPACT_DETECTED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::VEHICLE_HORN_ENGAGED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::GEAR_SELECTION, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::CURRENT_GEAR, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::PARKING_BRAKE_ON, VehiclePropertyChangeMode::ON_CHANGE},
@@ -86,6 +91,8 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::EV_STOPPING_MODE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::ELECTRONIC_STABILITY_CONTROL_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::ELECTRONIC_STABILITY_CONTROL_STATE, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::TURN_SIGNAL_LIGHT_STATE, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::TURN_SIGNAL_SWITCH, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HVAC_FAN_SPEED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HVAC_FAN_DIRECTION, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HVAC_TEMPERATURE_CURRENT, VehiclePropertyChangeMode::ON_CHANGE},
@@ -228,7 +235,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::INITIAL_USER_INFO, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SWITCH_USER, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::CREATE_USER, VehiclePropertyChangeMode::ON_CHANGE},
-        {VehicleProperty::REMOVE_USER, VehiclePropertyChangeMode::STATIC},
+        {VehicleProperty::REMOVE_USER, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::USER_IDENTIFICATION_ASSOCIATION, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::EVS_SERVICE_REQUEST, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::POWER_POLICY_REQ, VehiclePropertyChangeMode::ON_CHANGE},
@@ -262,6 +269,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::VEHICLE_IN_USE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::CLUSTER_HEARTBEAT, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::CAMERA_SERVICE_CURRENT_STATE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::PER_DISPLAY_MAX_BRIGHTNESS, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::AUTOMATIC_EMERGENCY_BRAKING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
@@ -304,9 +312,4 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE, VehiclePropertyChangeMode::ON_CHANGE},
 };
-
-}  // namespace vehicle
-}  // namespace automotive
-}  // namespace hardware
-}  // namespace android
-}  // aidl
+}  // aidl::android::hardware::automotive::vehicle
